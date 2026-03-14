@@ -68,6 +68,9 @@ defmodule ZealDocsets.CLI do
 
   @doc """
   Prints a human-readable execution report.
+
+  The report includes the execution settings, the build summary, an optional
+  note about docsets without custom icons, and any package-level failures.
   """
   @spec print_report(Runner.run_result()) :: :ok
   def print_report(result) do
@@ -145,7 +148,7 @@ defmodule ZealDocsets.CLI do
       --force           Regenerate even if version is up to date
       --dev             Include :dev-only dependencies
       --test            Include :test-only dependencies
-      --no-install      Skip copying docsets to zeal_docsets_path
+      --no-install      Generate docsets without copying them to the Zeal directory
       --package NAME    Only build this package (repeatable)
       --workspace PATH  Custom workspace directory
       --concurrency N   Parallel builds (default: schedulers online)

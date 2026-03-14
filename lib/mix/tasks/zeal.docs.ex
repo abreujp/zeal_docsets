@@ -20,6 +20,7 @@ defmodule Mix.Tasks.Zeal.Docs do
 
       mix zeal.docs ~/projects/my_app
       mix zeal.docs ~/projects/my_app ~/.local/share/Zeal/Zeal/docsets --dev
+      mix zeal.docs ~/projects/my_app --dev --test --force --concurrency 6
       mix zeal.docs ~/projects/my_app --package phoenix --force
   """
 
@@ -49,7 +50,7 @@ defmodule Mix.Tasks.Zeal.Docs do
       --force           Regenerate even if version is up to date
       --dev             Include :dev-only dependencies
       --test            Include :test-only dependencies
-      --no-install      Skip copying docsets to zeal_docsets_path
+      --no-install      Generate docsets without copying them to the Zeal directory
       --package NAME    Only build this package (repeatable)
       --workspace PATH  Custom workspace directory
       --concurrency N   Parallel builds (default: schedulers online)

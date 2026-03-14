@@ -34,6 +34,10 @@ defmodule ZealDocsets.Runner do
 
   @doc """
   Runs dependency discovery and docset generation for a target project.
+
+  Returns a map containing execution settings, per-package results, a build
+  summary, and a list of packages whose generated docsets do not include a
+  custom icon.
   """
   @spec run(Path.t(), Path.t(), keyword()) :: run_result()
   def run(project_path, zeal_path, opts) do
@@ -120,6 +124,8 @@ defmodule ZealDocsets.Runner do
 
   @doc """
   Filters dependencies by package name when a package filter is provided.
+
+  When `packages` is empty, the original dependency list is returned.
   """
   @spec filter_packages([map()], [String.t()]) :: list()
   def filter_packages(deps, []), do: deps

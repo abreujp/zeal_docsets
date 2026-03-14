@@ -12,11 +12,11 @@ defmodule ZealDocsets do
 
   ## CLI usage (escript)
 
-      zeal_docsets <project_path> <zeal_docsets_path> [options]
+      zeal_docsets <project_path> [zeal_docsets_path] [options]
 
   ## Mix task usage
 
-      mix zeal.docs <project_path> <zeal_docsets_path> [options]
+      mix zeal.docs <project_path> [zeal_docsets_path] [options]
 
   See `ZealDocsets.CLI` for the full list of options.
   """

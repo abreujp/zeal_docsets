@@ -11,9 +11,9 @@ defmodule ZealDocsets.Project do
   - **`mix.lock`** — provides the *exact* resolved versions that are
     currently locked (i.e. what `mix deps.get` would install).
 
-  Only Hex-sourced dependencies available in `:prod` or `:dev` environments
-  are included by default. Git and path dependencies are excluded because
-  they may not have a corresponding page on hexdocs.pm.
+  Only Hex-sourced dependencies available in the `:prod` environment are
+  included by default. Git and path dependencies are excluded because they may
+  not have a corresponding page on hexdocs.pm.
   """
 
   alias ZealDocsets.Dep
@@ -24,10 +24,10 @@ defmodule ZealDocsets.Project do
 
   ## Options
 
-  - `:include_dev`  — when `true`, includes dependencies declared with
-                      `only: :dev`. Defaults to `false`.
-  - `:include_test` — when `true`, includes dependencies declared with
-                      `only: :test`. Defaults to `false`.
+  - `:include_dev`  — when `true`, also includes dependencies declared for the
+                      `:dev` environment. Defaults to `false`.
+  - `:include_test` — when `true`, also includes dependencies declared for the
+                      `:test` environment. Defaults to `false`.
 
   ## Returns
 

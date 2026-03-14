@@ -32,10 +32,10 @@ defmodule ZealDocsets.Docset do
                       up to date. Defaults to `false`.
   - `:install`      — when `true`, copies the resulting docset to
                       `install_root`. Defaults to `true`.
-  - `:install_root` — the Zeal docsets directory. Defaults to
-                      the platform-specific Zeal docsets path.
-  - `:warn_missing_icon` — reserved compatibility option. Missing icons are
-                      summarized by the runner instead of being printed here.
+  - `:install_root` — the Zeal docsets directory. Defaults to the
+                      platform-specific Zeal docsets path.
+  - `:mirror_fn`    — internal/testing hook that overrides the mirroring
+                      function. Defaults to `&ZealDocsets.Hexdocs.mirror/3`.
 
   ## Return values
 
@@ -86,6 +86,8 @@ defmodule ZealDocsets.Docset do
 
   @doc """
   Returns the default Zeal docsets directory for the current platform.
+
+  The default path is resolved for Linux, macOS, and Windows.
   """
   @spec default_install_root() :: Path.t()
   def default_install_root do

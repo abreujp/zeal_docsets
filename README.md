@@ -23,6 +23,7 @@ generated docsets.
 - Skips packages already at the correct version unless `--force` is used.
 - Installs directly into Zeal's docsets directory.
 - Supports production-only mode by default, with optional `--dev` and `--test`.
+- Summarises docsets generated without a custom icon instead of printing one warning per package.
 - Works as an escript (`zeal_docsets`) or a Mix task (`mix zeal.docs`).
 
 ## Installation
@@ -99,6 +100,9 @@ zeal_docsets ~/projects/my_app --package phoenix --force
 
 # Build without installing
 zeal_docsets ~/projects/my_app --no-install
+
+# Generate docsets for all direct deps, including dev and test deps
+mix zeal.docs ~/projects/my_app --dev --test --force --concurrency 6
 ```
 
 ## How it works
@@ -130,6 +134,8 @@ zeal_docsets ~/projects/my_app --no-install
 mix deps.get
 mix format
 mix test
+mix quality
+mix dialyzer
 mix escript.build
 ```
 

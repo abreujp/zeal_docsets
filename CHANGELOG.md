@@ -5,24 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.1] - 2026-03-14
 
 ### Changed
 
 - Detect the default Zeal docsets directory by platform.
 - Build temporary workspace files outside the project repository by default.
 - Improve CLI ergonomics by allowing the Zeal path argument to be optional.
+- Summarize missing custom icons at the end of a run instead of printing one warning per package.
+- Move Dialyzer PLTs to `.dialyzer/` instead of `priv/`.
+- Replace Sobelow with a quality toolchain tailored to this CLI/library project.
 
 ### Fixed
 
 - Escape values written to `Info.plist` and `meta.json`.
 - Handle missing URI paths defensively in the HexDocs crawler.
 - Keep test output clean by capturing CLI report output correctly.
+- Align HexDocs and inline documentation with the current CLI behavior.
 
 ### Added
 
 - Simple retry logic for transient HTTP failures.
 - Additional CLI and runner test coverage.
+- `mix quality` alias combining formatting, compilation, tests, linting, auditing, documentation checks, and duplication checks.
 
 ## [0.1.0] - 2026-03-14
 
