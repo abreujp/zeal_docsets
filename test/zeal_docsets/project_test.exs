@@ -59,6 +59,53 @@ defmodule ZealDocsets.ProjectTest do
     assert {"floki", "0.38.0"} in Enum.map(deps, &{&1.package, &1.version})
   end
 
+  test "includes an extra package with the latest resolved version", %{project_root: project_root} do
+    write_fixture_project(project_root)
+
+    deps =
+      Project.load!(project_root,
+        extra_packages: ["plug"],
+        latest_version_fn: fn
+          "plug" -> "1.16.1"
+        end
+      )
+
+    assert {"plug", "1.16.1"} in Enum.map(deps, &{&1.package, &1.version})
+  end
+
+  test "includes an extra package with an explicit version", %{project_root: project_root} do
+    write_fixture_project(project_root)
+
+    deps = Project.load!(project_root, extra_packages: ["plug@1.16.2"])
+
+    assert {"plug", "1.16.2"} in Enum.map(deps, &{&1.package, &1.version})
+  end
+
+  test "extra package overrides the discovered project version", %{project_root: project_root} do
+    write_fixture_project(project_root)
+
+    deps = Project.load!(project_root, extra_packages: ["ecto@9.9.9"])
+
+    assert {"ecto", "9.9.9"} in Enum.map(deps, &{&1.package, &1.version})
+  end
+
+  test "parses extra package specs with and without versions" do
+    assert Project.parse_extra_package_spec!("ecto") == {"ecto", nil}
+    assert Project.parse_extra_package_spec!("ecto@3.13.5") == {"ecto", "3.13.5"}
+  end
+
+  test "raises for an invalid extra package spec" do
+    assert_raise ArgumentError, ~r/invalid --extra-package/, fn ->
+      Project.parse_extra_package_spec!("ecto@")
+    end
+  end
+
+  test "raises for an invalid extra package name" do
+    assert_raise ArgumentError, ~r/invalid Hex package name/, fn ->
+      Project.parse_extra_package_spec!("ecto schema")
+    end
+  end
+
   test "raises ArgumentError when mix.exs is missing", %{project_root: project_root} do
     assert_raise ArgumentError, ~r/mix\.exs/, fn ->
       Project.load!(project_root)

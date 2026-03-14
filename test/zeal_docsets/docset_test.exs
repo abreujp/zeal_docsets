@@ -89,6 +89,23 @@ defmodule ZealDocsets.DocsetTest do
         assert File.dir?(installed_path)
       end)
     end
+
+    test "emits progress events while building", %{dep: dep} do
+      Fixtures.with_tmp_dir(fn base ->
+        workspace = setup_workspace(base)
+        test_pid = self()
+
+        progress_fn = fn event -> send(test_pid, event) end
+
+        assert {:ok, _path, _installed} =
+                 Docset.build(dep, workspace, build_opts(dep, progress_fn: progress_fn))
+
+        assert_received {:downloading, "mypkg", "1.0.0"}
+        assert_received {:building, "mypkg", "1.0.0"}
+        assert_received {:installing, "mypkg", "1.0.0", false}
+        assert_received {:finished, "mypkg", "1.0.0"}
+      end)
+    end
   end
 
   defp setup_workspace(base) do

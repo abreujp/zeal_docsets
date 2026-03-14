@@ -10,10 +10,14 @@ defmodule ZealDocsets.Project do
 
   Only Hex-sourced dependencies available in the `:prod` environment are
   included by default. Git and path dependencies are excluded because they may
-  not have a corresponding page on hexdocs.pm.
+  not have a corresponding page on hexdocs.pm. Extra packages requested via the
+  CLI can also be appended even when they are not present in the target
+  project's dependency tree.
   """
 
   alias ZealDocsets.Dep
+  alias ZealDocsets.HexPackage
+  alias ZealDocsets.HexPm
 
   @doc """
   Loads and returns the list of resolved direct Hex dependencies for the Mix
@@ -28,6 +32,8 @@ defmodule ZealDocsets.Project do
   - `:current_project` - when `true`, reads dependency information from the
     currently loaded Mix project instead of reloading the project from disk.
     This is the supported mode when `zeal_docsets` is used as a dependency.
+  - `:extra_packages` - a list of extra Hex packages to include even when they
+    are not declared in `mix.exs`. Each entry accepts `name` or `name@version`.
 
   ## Returns
 
@@ -43,6 +49,12 @@ defmodule ZealDocsets.Project do
     include_dev = Keyword.get(opts, :include_dev, false)
     include_test = Keyword.get(opts, :include_test, false)
     current_project = Keyword.get(opts, :current_project, false)
+    progress_fn = Keyword.get(opts, :progress_fn)
+
+    extra_packages =
+      Keyword.get_values(opts, :extra_package) ++ Keyword.get(opts, :extra_packages, [])
+
+    latest_version_fn = Keyword.get(opts, :latest_version_fn, &HexPm.latest_stable_version!/1)
     project_path = Path.expand(path)
 
     ensure_project_files!(project_path)
@@ -54,11 +66,29 @@ defmodule ZealDocsets.Project do
       |> Enum.filter(&keep_dep?(&1, include_dev, include_test))
 
     versions = lock_versions(project_path)
+    extras = Enum.map(extra_packages, &extra_dep!(&1, latest_version_fn, progress_fn))
 
     deps
     |> Enum.map(&attach_version(&1, versions))
     |> Enum.filter(&(&1.source == :hex and is_binary(&1.version)))
+    |> merge_extra_deps(extras)
     |> Enum.sort_by(& &1.package)
+  end
+
+  @doc """
+  Parses an extra package specification.
+
+  Accepted formats are `package` and `package@version`.
+  """
+  @spec parse_extra_package_spec!(String.t()) :: {String.t(), String.t() | nil}
+  def parse_extra_package_spec!(spec) do
+    spec = String.trim(spec)
+
+    case String.split(spec, "@") do
+      [package] -> {HexPackage.validate_name!(package), nil}
+      [package, version] -> {HexPackage.validate_name!(package), validate_version!(version, spec)}
+      _other -> raise ArgumentError, invalid_extra_package_message(spec)
+    end
   end
 
   defp ensure_project_files!(project_path) do
@@ -175,7 +205,49 @@ defmodule ZealDocsets.Project do
     end
   end
 
+  defp extra_dep!(spec, latest_version_fn, progress_fn) do
+    {package, version} = parse_extra_package_spec!(spec)
+
+    notify(progress_fn, {:resolving_extra_package, spec, package, version})
+
+    resolved_version = version || latest_version_fn.(package)
+
+    notify(progress_fn, {:resolved_extra_package, spec, package, resolved_version})
+
+    %Dep{
+      package: package,
+      version: resolved_version,
+      source: :hex
+    }
+  end
+
+  defp merge_extra_deps(deps, []), do: deps
+
+  defp merge_extra_deps(deps, extras) do
+    deps
+    |> Kernel.++(extras)
+    |> Enum.reduce(%{}, fn dep, acc -> Map.put(acc, dep.package, dep) end)
+    |> Map.values()
+  end
+
   defp normalize_lock_keywords(contents) do
     Regex.replace(~r/"([A-Za-z0-9_]+)":/, contents, "\\1:")
   end
+
+  defp validate_version!(version, spec) do
+    version = String.trim(version)
+
+    if version == "" do
+      raise ArgumentError, invalid_extra_package_message(spec)
+    else
+      version
+    end
+  end
+
+  defp invalid_extra_package_message(spec) do
+    "invalid --extra-package value #{inspect(spec)}; expected package or package@version"
+  end
+
+  defp notify(nil, _event), do: :ok
+  defp notify(progress_fn, event), do: progress_fn.(event)
 end

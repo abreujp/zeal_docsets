@@ -11,6 +11,17 @@ defmodule ZealDocsets.Runner do
   alias ZealDocsets.Project
   alias ZealDocsets.Workspace
 
+  @type progress_event ::
+          {:resolving_extra_package, String.t(), String.t(), String.t() | nil}
+          | {:resolved_extra_package, String.t(), String.t(), String.t()}
+          | {:starting, String.t(), String.t(), pos_integer(), non_neg_integer()}
+          | {:downloading, String.t(), String.t()}
+          | {:building, String.t(), String.t()}
+          | {:installing, String.t(), String.t(), boolean()}
+          | {:finished, String.t(), String.t()}
+          | {:skipped, String.t(), String.t()}
+          | {:failed, String.t(), String.t(), String.t()}
+
   @type result :: {:ok | :skipped | :error, String.t(), String.t()}
 
   @type summary :: %{
@@ -27,6 +38,7 @@ defmodule ZealDocsets.Runner do
           concurrency: pos_integer(),
           include_dev: boolean(),
           include_test: boolean(),
+          extra_packages: [String.t()],
           missing_icons: [String.t()],
           results: [result()],
           summary: summary()
@@ -50,14 +62,22 @@ defmodule ZealDocsets.Runner do
     concurrency = max(1, Keyword.get(opts, :concurrency, System.schedulers_online()))
     include_dev = Keyword.get(opts, :dev, false) or Keyword.get(opts, :include_dev, false)
     include_test = Keyword.get(opts, :test, false) or Keyword.get(opts, :include_test, false)
+    extra_packages = Keyword.get_values(opts, :extra_package)
+    progress_fn = Keyword.get(opts, :progress_fn)
+
+    project_opts =
+      [
+        include_dev: include_dev,
+        include_test: include_test,
+        current_project: Keyword.get(opts, :current_project, false),
+        extra_packages: extra_packages,
+        progress_fn: progress_fn
+      ]
+      |> maybe_put(:latest_version_fn, Keyword.get(opts, :latest_version_fn))
 
     deps =
       project_path
-      |> Project.load!(
-        include_dev: include_dev,
-        include_test: include_test,
-        current_project: Keyword.get(opts, :current_project, false)
-      )
+      |> Project.load!(project_opts)
       |> filter_packages(Keyword.get_values(opts, :package))
 
     total = length(deps)
@@ -70,12 +90,15 @@ defmodule ZealDocsets.Runner do
           label = "[#{index}/#{total}] #{dep.package} #{dep.version}"
 
           try do
+            notify(progress_fn, {:starting, dep.package, dep.version, index, total})
+
             build_opts =
               [
                 force: Keyword.get(opts, :force, false),
                 install: install?,
                 install_root: zeal_path,
-                warn_missing_icon: Keyword.get(opts, :warn_missing_icon, true)
+                warn_missing_icon: Keyword.get(opts, :warn_missing_icon, true),
+                progress_fn: progress_fn
               ]
               |> maybe_put(:mirror_fn, Keyword.get(opts, :mirror_fn))
 
@@ -88,6 +111,7 @@ defmodule ZealDocsets.Runner do
             end
           rescue
             error ->
+              notify(progress_fn, {:failed, dep.package, dep.version, Exception.message(error)})
               {:error, dep.package, Exception.message(error), label}
           end
         end,
@@ -112,6 +136,7 @@ defmodule ZealDocsets.Runner do
       concurrency: concurrency,
       include_dev: include_dev,
       include_test: include_test,
+      extra_packages: extra_packages,
       missing_icons: missing_icons,
       results: results,
       summary: summarize(results)
@@ -137,6 +162,53 @@ defmodule ZealDocsets.Runner do
 
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+
+  @doc false
+  @spec print_progress(progress_event()) :: :ok
+  def print_progress({:resolving_extra_package, spec, package, nil}) do
+    IO.puts("Resolving #{spec} from Hex.pm as #{package}...")
+  end
+
+  def print_progress({:resolving_extra_package, spec, package, version}) do
+    IO.puts("Using explicit version for #{spec}: #{package} #{version}...")
+  end
+
+  def print_progress({:resolved_extra_package, _spec, package, version}) do
+    IO.puts("Resolved #{package} #{version}.")
+  end
+
+  def print_progress({:starting, package, version, index, total}) do
+    IO.puts("[#{index}/#{total}] Starting #{package} #{version}...")
+  end
+
+  def print_progress({:downloading, package, version}) do
+    IO.puts("Downloading docs for #{package} #{version}...")
+  end
+
+  def print_progress({:building, package, version}) do
+    IO.puts("Building docset for #{package} #{version}...")
+  end
+
+  def print_progress({:installing, package, version, true}) do
+    IO.puts("Installing #{package} #{version} into Zeal...")
+  end
+
+  def print_progress({:installing, _package, _version, false}), do: :ok
+
+  def print_progress({:finished, package, version}) do
+    IO.puts("Finished #{package} #{version}.")
+  end
+
+  def print_progress({:skipped, package, version}) do
+    IO.puts("Skipping #{package} #{version}; docset is already up to date.")
+  end
+
+  def print_progress({:failed, package, version, message}) do
+    IO.puts(:stderr, "Failed #{package} #{version}: #{message}")
+  end
+
+  defp notify(nil, _event), do: :ok
+  defp notify(progress_fn, event), do: progress_fn.(event)
 
   @doc """
   Summarizes build results into built, skipped, and failed counts.

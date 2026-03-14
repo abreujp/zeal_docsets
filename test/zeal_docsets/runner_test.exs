@@ -54,6 +54,53 @@ defmodule ZealDocsets.RunnerTest do
     end
   end
 
+  describe "print_progress/1" do
+    import ExUnit.CaptureIO
+
+    test "prints the textual progress messages" do
+      output =
+        capture_io(fn ->
+          Runner.print_progress({:resolving_extra_package, "plug", "plug", nil})
+          Runner.print_progress({:resolved_extra_package, "plug", "plug", "1.16.1"})
+          Runner.print_progress({:starting, "plug", "1.16.1", 1, 2})
+          Runner.print_progress({:downloading, "plug", "1.16.1"})
+          Runner.print_progress({:building, "plug", "1.16.1"})
+          Runner.print_progress({:installing, "plug", "1.16.1", true})
+          Runner.print_progress({:finished, "plug", "1.16.1"})
+          Runner.print_progress({:skipped, "plug", "1.16.1"})
+        end)
+
+      assert output =~ "Resolving plug from Hex.pm as plug..."
+      assert output =~ "Resolved plug 1.16.1."
+      assert output =~ "[1/2] Starting plug 1.16.1..."
+      assert output =~ "Downloading docs for plug 1.16.1..."
+      assert output =~ "Building docset for plug 1.16.1..."
+      assert output =~ "Installing plug 1.16.1 into Zeal..."
+      assert output =~ "Finished plug 1.16.1."
+      assert output =~ "Skipping plug 1.16.1; docset is already up to date."
+    end
+
+    test "prints explicit version progress" do
+      output =
+        capture_io(fn ->
+          Runner.print_progress({:resolving_extra_package, "plug@1.16.2", "plug", "1.16.2"})
+          Runner.print_progress({:installing, "plug", "1.16.2", false})
+        end)
+
+      assert output =~ "Using explicit version for plug@1.16.2: plug 1.16.2..."
+      assert output == "Using explicit version for plug@1.16.2: plug 1.16.2...\n"
+    end
+
+    test "prints failures to stderr" do
+      output =
+        capture_io(:stderr, fn ->
+          Runner.print_progress({:failed, "plug", "1.16.1", "boom"})
+        end)
+
+      assert output =~ "Failed plug 1.16.1: boom"
+    end
+  end
+
   describe "run/3" do
     setup do
       project_root =
@@ -89,6 +136,7 @@ defmodule ZealDocsets.RunnerTest do
         assert Map.has_key?(result, :zeal_path)
         assert Map.has_key?(result, :results)
         assert Map.has_key?(result, :summary)
+        assert Map.has_key?(result, :extra_packages)
         assert is_list(result.results)
       end)
     end
@@ -154,6 +202,54 @@ defmodule ZealDocsets.RunnerTest do
       end)
     end
 
+    test "includes extra packages outside the project dependency list", %{
+      project_root: project_root
+    } do
+      Fixtures.with_tmp_dir(fn base ->
+        workspace = Path.join(base, "workspace")
+        zeal_path = Path.join(base, "zeal")
+
+        result =
+          Runner.run(project_root, zeal_path,
+            workspace: workspace,
+            no_install: true,
+            current_project: false,
+            extra_package: "plug",
+            latest_version_fn: fn
+              "plug" -> "1.16.1"
+            end,
+            warn_missing_icon: false,
+            mirror_fn: fake_mirror()
+          )
+
+        packages = Enum.map(result.results, fn {_status, pkg, _path} -> pkg end)
+        assert Enum.sort(packages) == ["mypkg", "plug"]
+        assert result.extra_packages == ["plug"]
+      end)
+    end
+
+    test "respects explicit versions for extra packages", %{project_root: project_root} do
+      Fixtures.with_tmp_dir(fn base ->
+        workspace = Path.join(base, "workspace")
+        zeal_path = Path.join(base, "zeal")
+
+        result =
+          Runner.run(project_root, zeal_path,
+            workspace: workspace,
+            no_install: true,
+            current_project: false,
+            extra_package: "plug@1.16.2",
+            warn_missing_icon: false,
+            mirror_fn: fake_mirror()
+          )
+
+        assert {_, "plug", path} =
+                 Enum.find(result.results, fn {_status, pkg, _path} -> pkg == "plug" end)
+
+        assert path =~ "plug.docset"
+      end)
+    end
+
     test "collects build failures instead of crashing", %{project_root: project_root} do
       Fixtures.with_tmp_dir(fn base ->
         workspace = Path.join(base, "workspace")
@@ -171,6 +267,34 @@ defmodule ZealDocsets.RunnerTest do
         assert result.summary == %{built: 0, skipped: 0, failed: 1}
         assert [{:error, "mypkg", message}] = result.results
         assert message =~ "mirror failed"
+      end)
+    end
+
+    test "emits progress updates for extra packages and builds", %{project_root: project_root} do
+      Fixtures.with_tmp_dir(fn base ->
+        workspace = Path.join(base, "workspace")
+        zeal_path = Path.join(base, "zeal")
+        test_pid = self()
+
+        progress_fn = fn event -> send(test_pid, event) end
+
+        _result =
+          Runner.run(project_root, zeal_path,
+            workspace: workspace,
+            no_install: true,
+            current_project: false,
+            extra_package: "plug",
+            latest_version_fn: fn "plug" -> "1.16.1" end,
+            progress_fn: progress_fn,
+            warn_missing_icon: false,
+            mirror_fn: fake_mirror()
+          )
+
+        assert_received {:resolving_extra_package, "plug", "plug", nil}
+        assert_received {:resolved_extra_package, "plug", "plug", "1.16.1"}
+        assert_received {:starting, "plug", "1.16.1", _index, _total}
+        assert_received {:downloading, "plug", "1.16.1"}
+        assert_received {:finished, "plug", "1.16.1"}
       end)
     end
   end

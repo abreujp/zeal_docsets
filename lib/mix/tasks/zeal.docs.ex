@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Zeal.Docs do
 
   @moduledoc """
   Generates Zeal/Dash-compatible docsets for the direct Hex dependencies of the
-  current Mix project.
+  current Mix project, with optional extra Hex packages requested explicitly.
 
   The supported workflow is to run this task from the target project's root and
   pass `.` as the project path. If `zeal_docsets_path` is omitted, the default
@@ -23,6 +23,8 @@ defmodule Mix.Tasks.Zeal.Docs do
       mix zeal.docs . ~/.local/share/Zeal/Zeal/docsets --dev
       mix zeal.docs . --dev --test --force --concurrency 6
       mix zeal.docs . --package phoenix --force
+      mix zeal.docs . --extra-package ecto
+      mix zeal.docs . --extra-package phoenix_live_view@1.1.16
   """
 
   @impl true
@@ -67,6 +69,9 @@ defmodule Mix.Tasks.Zeal.Docs do
       --test            Include :test-only dependencies
       --no-install      Generate docsets without copying them to the Zeal directory
       --package NAME    Only build this package (repeatable)
+      --extra-package SPEC
+                        Also build a Hex package not declared in mix.exs.
+                        Accepts package or package@version and is repeatable.
       --workspace PATH  Custom workspace directory
       --concurrency N   Parallel builds (default: schedulers online)
     """

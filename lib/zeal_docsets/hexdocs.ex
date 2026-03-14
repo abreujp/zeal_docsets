@@ -273,8 +273,13 @@ defmodule ZealDocsets.Hexdocs do
     end
   end
 
-  defp required_resource?("/"), do: true
-  defp required_resource?(path), do: String.ends_with?(path, ".html")
+  @doc false
+  @spec required_resource?(String.t()) :: boolean()
+  def required_resource?("/"), do: true
+
+  def required_resource?(path) do
+    String.ends_with?(path, "/index.html") or String.ends_with?(path, "/api-reference.html")
+  end
 
   defp ignored_extension?(path) do
     lower = String.downcase(path)

@@ -55,6 +55,26 @@ defmodule ZealDocsets.CLITest do
       assert Keyword.get_values(opts, :package) == ["phoenix", "ecto"]
     end
 
+    test "parses --extra-package flag (single and versioned)" do
+      assert {:ok, _, _, opts} =
+               CLI.parse_args(["/tmp/my_app", "--extra-package", "ecto@3.13.5"])
+
+      assert Keyword.get_values(opts, :extra_package) == ["ecto@3.13.5"]
+    end
+
+    test "parses --extra-package flag (multiple)" do
+      assert {:ok, _, _, opts} =
+               CLI.parse_args([
+                 "/tmp/my_app",
+                 "--extra-package",
+                 "ecto",
+                 "--extra-package",
+                 "plug@1.16.1"
+               ])
+
+      assert Keyword.get_values(opts, :extra_package) == ["ecto", "plug@1.16.1"]
+    end
+
     test "parses --workspace flag" do
       assert {:ok, _, _, opts} = CLI.parse_args(["/tmp/my_app", "--workspace", "/tmp/ws"])
       assert opts[:workspace] == "/tmp/ws"
@@ -93,6 +113,7 @@ defmodule ZealDocsets.CLITest do
         concurrency: 4,
         include_dev: false,
         include_test: false,
+        extra_packages: [],
         missing_icons: [],
         results: [],
         summary: %{built: 0, skipped: 0, failed: 0}
@@ -101,7 +122,8 @@ defmodule ZealDocsets.CLITest do
       output = capture_io(fn -> CLI.print_report(result) end)
 
       assert output =~ "Project:"
-      assert output =~ "No direct Hex dependencies found."
+      assert output =~ "Extra pkgs:   none"
+      assert output =~ "No matching Hex packages found."
     end
 
     test "prints summary when results are present" do
@@ -113,6 +135,7 @@ defmodule ZealDocsets.CLITest do
         concurrency: 2,
         include_dev: true,
         include_test: false,
+        extra_packages: ["ecto", "plug@1.16.1"],
         missing_icons: ["ecto", "phoenix"],
         results: [
           {:ok, "phoenix", "/some/path"},
@@ -128,6 +151,7 @@ defmodule ZealDocsets.CLITest do
       assert output =~ "0 failed"
       assert output =~ "Include dev:  yes"
       assert output =~ "Install:      no"
+      assert output =~ "Extra pkgs:   ecto, plug@1.16.1"
       assert output =~ "2 docsets were generated without a custom icon"
     end
 
@@ -140,6 +164,7 @@ defmodule ZealDocsets.CLITest do
         concurrency: 1,
         include_dev: false,
         include_test: false,
+        extra_packages: [],
         missing_icons: [],
         results: [
           {:error, "broken_pkg", "connection refused"}

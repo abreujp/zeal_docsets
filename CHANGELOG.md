@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-03-14
+
+### Added
+
+- Add `--extra-package` so docsets can be generated for Hex packages that are not declared in the target project's `mix.exs`.
+- Support versioned extra package specs such as `phoenix_live_view@1.1.16`.
+
+### Changed
+
+- Resolve the latest stable Hex.pm version automatically when `--extra-package` is given without an explicit version.
+- Update CLI output and documentation to reflect extra package support.
+- Show textual progress updates while resolving, downloading, building, and installing docsets.
+- Clarify the `floki` setup requirement and how to build only an extra package in the README examples.
+
+### Fixed
+
+- Continue generating docsets when a crawled HTML page returns `404` but is not a required entry page.
+
 ## [0.1.4] - 2026-03-14
 
 ### Fixed

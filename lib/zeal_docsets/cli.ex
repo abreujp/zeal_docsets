@@ -14,6 +14,7 @@ defmodule ZealDocsets.CLI do
   @switches [
     concurrency: :integer,
     dev: :boolean,
+    extra_package: :keep,
     force: :boolean,
     include_dev: :boolean,
     include_test: :boolean,
@@ -28,7 +29,11 @@ defmodule ZealDocsets.CLI do
   """
   @spec run(Path.t(), Path.t(), keyword()) :: Runner.run_result()
   def run(project_path, zeal_path, opts) do
-    Runner.run(project_path, zeal_path, opts)
+    Runner.run(
+      project_path,
+      zeal_path,
+      Keyword.put_new(opts, :progress_fn, &Runner.print_progress/1)
+    )
   end
 
   @doc """
@@ -61,7 +66,7 @@ defmodule ZealDocsets.CLI do
     print_header(result)
 
     if result.results == [] do
-      IO.puts("No direct Hex dependencies found.")
+      IO.puts("No matching Hex packages found.")
     else
       print_summary(result)
     end
@@ -99,6 +104,7 @@ defmodule ZealDocsets.CLI do
     IO.puts("Concurrency:  #{result.concurrency}")
     IO.puts("Include dev:  #{yes_no(result.include_dev)}")
     IO.puts("Include test: #{yes_no(result.include_test)}")
+    IO.puts("Extra pkgs:   #{format_extra_packages(result.extra_packages)}")
     IO.puts("")
   end
 
@@ -123,4 +129,7 @@ defmodule ZealDocsets.CLI do
 
   defp yes_no(true), do: "yes"
   defp yes_no(false), do: "no"
+
+  defp format_extra_packages([]), do: "none"
+  defp format_extra_packages(packages), do: Enum.join(packages, ", ")
 end

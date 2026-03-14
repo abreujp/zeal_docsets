@@ -1,9 +1,10 @@
 defmodule ZealDocsets.Dep do
   @moduledoc """
-  Represents a resolved Mix dependency from a target project.
+  Represents a resolved package selected for docset generation.
 
-  A `Dep` is built by reading a project's `mix.exs` for direct dependencies
-  and cross-referencing the exact locked version from `mix.lock`.
+  A `Dep` is usually built by reading a project's `mix.exs` for direct
+  dependencies and cross-referencing the exact locked version from `mix.lock`.
+  It can also represent an extra Hex package requested explicitly from the CLI.
 
   ## Fields
 
@@ -19,11 +20,10 @@ defmodule ZealDocsets.Dep do
                      e.g. `[:prod]`, `[:dev, :test]`. Defaults to `[:prod]`.
   """
 
-  @enforce_keys [:app]
   defstruct [:app, :package, :requirement, :version, :source, envs: [:prod]]
 
   @type t :: %__MODULE__{
-          app: atom(),
+          app: atom() | nil,
           package: String.t() | nil,
           requirement: String.t() | nil,
           version: String.t() | nil,

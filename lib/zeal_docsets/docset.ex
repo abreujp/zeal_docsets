@@ -49,17 +49,21 @@ defmodule ZealDocsets.Docset do
   def build(%Dep{} = dep, workspace_root, opts \\ []) do
     force? = Keyword.get(opts, :force, false)
     install? = Keyword.get(opts, :install, true)
+    progress_fn = Keyword.get(opts, :progress_fn)
     install_root = Path.expand(Keyword.get(opts, :install_root, default_install_root()))
     output_root = Path.join(workspace_root, "output")
     display_title = title_from_package(dep)
     docset_root = Path.join(output_root, "#{dep.package}.docset")
 
     if not force? and current_version(docset_root) == dep.version do
+      notify(progress_fn, {:skipped, dep.package, dep.version})
       maybe_install_existing(docset_root, install_root, install?)
       {:skipped, docset_root}
     else
       downloads_root = Path.join(workspace_root, "downloads")
       mirror_fn = Keyword.get(opts, :mirror_fn, &Hexdocs.mirror/3)
+
+      notify(progress_fn, {:downloading, dep.package, dep.version})
       mirror_root = mirror_fn.(dep.package, dep.version, downloads_root)
 
       File.rm_rf!(docset_root)
@@ -67,6 +71,7 @@ defmodule ZealDocsets.Docset do
       docs_root =
         Path.join([docset_root, "Contents", "Resources", "Documents", "docs", dep.package])
 
+      notify(progress_fn, {:building, dep.package, dep.version})
       File.mkdir_p!(Path.dirname(docs_root))
       File.cp_r!(mirror_root, docs_root)
       write_info_plist!(docset_root, docs_root, dep, display_title)
@@ -79,7 +84,9 @@ defmodule ZealDocsets.Docset do
         dep.package
       )
 
+      notify(progress_fn, {:installing, dep.package, dep.version, install?})
       installed_path = maybe_install_existing(docset_root, install_root, install?)
+      notify(progress_fn, {:finished, dep.package, dep.version})
       {:ok, docset_root, installed_path}
     end
   end
@@ -230,4 +237,7 @@ defmodule ZealDocsets.Docset do
       Path.join(relative_root, "index.html")
     end
   end
+
+  defp notify(nil, _event), do: :ok
+  defp notify(progress_fn, event), do: progress_fn.(event)
 end

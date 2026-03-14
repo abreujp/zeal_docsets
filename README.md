@@ -4,13 +4,14 @@
 [![CI](https://github.com/abreujp/zeal_docsets/actions/workflows/ci.yml/badge.svg)](https://github.com/abreujp/zeal_docsets/actions/workflows/ci.yml)
 
 Generate offline [Zeal](https://zealdocs.org/) / [Dash](https://kapeli.com/dash)
-docsets from the direct Hex dependencies of any Mix project.
+docsets from the direct Hex dependencies of any Mix project, with optional
+extra packages fetched from Hex.pm.
 
 `zeal_docsets` reads a target project's `mix.exs` to discover direct
 Hex dependencies, cross-references `mix.lock` for the exact locked versions,
-and downloads the HTML documentation from [hexdocs.pm](https://hexdocs.pm)
-using a pure-Elixir crawler. The original HexDocs UI is preserved in the
-generated docsets.
+optionally appends extra Hex packages requested on the CLI, and downloads the
+HTML documentation from [hexdocs.pm](https://hexdocs.pm) using a pure-Elixir
+crawler. The original HexDocs UI is preserved in the generated docsets.
 
 ## Features
 
@@ -23,6 +24,7 @@ generated docsets.
 - Skips packages already at the correct version unless `--force` is used.
 - Installs directly into Zeal's docsets directory.
 - Supports production-only mode by default, with optional `--dev` and `--test`.
+- Supports `--extra-package` for packages that are not declared in `mix.exs`.
 - Summarises docsets generated without a custom icon instead of printing one warning per package.
 - Integrates into a target Mix project as a development dependency.
 
@@ -35,7 +37,7 @@ Add `zeal_docsets` to the target project's `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:zeal_docsets, "~> 0.1.4", only: [:dev, :test], runtime: false}
+    {:zeal_docsets, "~> 0.1.5", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -46,9 +48,18 @@ Then fetch dependencies inside the target project:
 mix deps.get
 ```
 
-If the target project already depends on `floki` only in `:test`, you may need
- to make it available in `:dev` as well (for example `only: [:dev, :test]`) so
- `zeal_docsets` can use the same dependency while running `mix zeal.docs`.
+## Common setup issue
+
+If the target project depends on `floki` only in `:test`, `mix zeal.docs` can
+fail when run from the usual `:dev` environment. In that case, expose `floki`
+to both environments:
+
+```elixir
+{:floki, ">= 0.37.0", only: [:dev, :test]}
+```
+
+This is the same fix you would apply when the task works in tests but fails in
+development.
 
 ## Usage
 
@@ -77,6 +88,7 @@ Use `--workspace PATH` only if you want to override that location.
 | `--test` | Include `:test` dependencies |
 | `--no-install` | Generate docsets but skip copying to the Zeal directory |
 | `--package NAME` | Only build this package (repeatable) |
+| `--extra-package SPEC` | Also build a Hex package not declared in `mix.exs`; accepts `name` or `name@version` |
 | `--workspace PATH` | Custom workspace directory for downloads and output |
 | `--concurrency N` | Parallel builds (default: number of schedulers online) |
 
@@ -98,6 +110,18 @@ mix zeal.docs . ~/.local/share/Zeal/Zeal/docsets
 # Regenerate only phoenix
 mix zeal.docs . --package phoenix --force
 
+# Also fetch ecto even if the project does not depend on it directly
+mix zeal.docs . --extra-package ecto
+
+# Fetch a specific version from Hex.pm
+mix zeal.docs . --extra-package phoenix_live_view@1.1.16
+
+# Build only the extra package, not the project's other direct dependencies
+mix zeal.docs . --package ash --extra-package ash --force
+
+# Replace an existing docset with another version of the same package
+mix zeal.docs . --extra-package ash@3.19.2 --force
+
 # Build without installing
 mix zeal.docs . --no-install
 
@@ -109,11 +133,12 @@ mix zeal.docs . --dev --test --force --concurrency 6
 
 1. Dependency discovery - `mix.exs` is loaded in an isolated Mix context.
 2. Version resolution - `mix.lock` is parsed to obtain exact locked versions.
-3. Filtering - git/path dependencies are excluded because they do not map cleanly to `hexdocs.pm`.
-4. Mirroring - HTML, CSS, JavaScript, fonts, and image assets are downloaded from `hexdocs.pm`.
-5. Packaging - the mirrored files are assembled into a `.docset` bundle.
-6. Indexing - a SQLite search index is generated for modules, functions, types, callbacks, macros, commands, and guides.
-7. Installation - the docset is copied to the Zeal docsets directory unless `--no-install` is used.
+3. Extra package resolution - any `--extra-package` entries are added, using the latest stable Hex.pm version by default.
+4. Filtering - git/path dependencies are excluded because they do not map cleanly to `hexdocs.pm`. If you want to build only an extra package, combine `--extra-package` with `--package`.
+5. Mirroring - HTML, CSS, JavaScript, fonts, and image assets are downloaded from `hexdocs.pm`, with textual progress updates for long-running downloads.
+6. Packaging - the mirrored files are assembled into a `.docset` bundle.
+7. Indexing - a SQLite search index is generated for modules, functions, types, callbacks, macros, commands, and guides.
+8. Installation - the docset is copied to the Zeal docsets directory unless `--no-install` is used.
 
 ## Limitations
 
@@ -127,7 +152,7 @@ mix zeal.docs . --dev --test --force --concurrency 6
 
 - Improve `mix.lock` parsing robustness.
 - Add optional download caching between runs.
-- Add more verbose progress reporting for long downloads.
+- Add richer progress reporting beyond the current textual updates.
 
 ## Development
 

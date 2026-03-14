@@ -1,7 +1,7 @@
 defmodule ZealDocsets.MixProject do
   use Mix.Project
 
-  @version "0.1.4"
+  @version "0.1.5"
   @source_url "https://github.com/abreujp/zeal_docsets"
 
   def project do
@@ -32,7 +32,7 @@ defmodule ZealDocsets.MixProject do
   end
 
   defp description do
-    "Generate offline Zeal/Dash docsets from the direct Hex dependencies of any Mix project."
+    "Generate offline Zeal/Dash docsets from a Mix project's direct Hex dependencies and extra Hex packages."
   end
 
   defp package do
