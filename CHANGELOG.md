@@ -5,12 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-03-14
+
+### Fixed
+
+- Correctly reuse the current Mix project context when `mix zeal.docs` runs from inside the target project.
+- Start `:exqlite` before indexing docsets so the task works reliably inside consuming projects.
+- Finalize the supported integration model as a Mix development dependency executed from the target project root.
+
+### Changed
+
+- Document the supported workflow as `mix zeal.docs .` from inside the target project.
+- Clarify the `floki` environment requirement when the consuming project restricts it to `:test` only.
+
 ## [0.1.2] - 2026-03-14
 
 ### Fixed
 
 - Remove the incorrect global-installation guidance and document the supported usage as a Mix development dependency.
-- Reuse the current Mix project context when `mix zeal.docs` runs from inside the target project.
 
 ### Changed
 
