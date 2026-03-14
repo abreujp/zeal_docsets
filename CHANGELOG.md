@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-03-14
+
+### Fixed
+
+- Switch the recommended global installation method to `mix archive.install`, which works correctly with the project's Mix integration and native dependencies.
+
+### Changed
+
+- Stop documenting `escript` as the primary distribution format.
+- Document global usage through `mix zeal.docs` installed from a Mix archive.
+
 ## [0.1.1] - 2026-03-14
 
 ### Changed

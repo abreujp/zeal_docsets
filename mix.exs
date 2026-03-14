@@ -1,7 +1,7 @@
 defmodule ZealDocsets.MixProject do
   use Mix.Project
 
-  @version "0.1.1"
+  @version "0.1.2"
   @source_url "https://github.com/abreujp/zeal_docsets"
 
   def project do
@@ -11,7 +11,6 @@ defmodule ZealDocsets.MixProject do
       elixir: "~> 1.17",
       description: description(),
       package: package(),
-      escript: escript(),
       homepage_url: @source_url,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
@@ -23,21 +22,17 @@ defmodule ZealDocsets.MixProject do
         # and is covered by integration tests only.
         ignore_modules: [ZealDocsets.Hexdocs, Mix.Tasks.Zeal.Docs]
       ],
-      # Do not start the application for escript/tasks — no OTP app needed
+      # The package is used through Mix tasks; no supervision tree is needed.
       start_permanent: false
     ]
   end
 
   def application do
-    [extra_applications: [:inets, :logger, :ssl]]
+    [extra_applications: [:inets, :logger, :mix, :ssl]]
   end
 
   defp description do
     "Generate offline Zeal/Dash docsets from the direct Hex dependencies of any Mix project."
-  end
-
-  defp escript do
-    [main_module: ZealDocsets.CLI]
   end
 
   defp package do
@@ -93,7 +88,7 @@ defmodule ZealDocsets.MixProject do
 
   defp aliases do
     [
-      build: ["escript.build"],
+      build: ["archive.build"],
       quality: [
         "format --check-formatted",
         "compile --warnings-as-errors",

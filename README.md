@@ -24,33 +24,27 @@ generated docsets.
 - Installs directly into Zeal's docsets directory.
 - Supports production-only mode by default, with optional `--dev` and `--test`.
 - Summarises docsets generated without a custom icon instead of printing one warning per package.
-- Works as an escript (`zeal_docsets`) or a Mix task (`mix zeal.docs`).
+- Installs globally as a Mix archive and runs as `mix zeal.docs`.
 
 ## Installation
 
 `zeal_docsets` supports Elixir `~> 1.17` and newer.
 
-Install the escript globally:
+Install the Mix archive globally:
 
 ```bash
-mix escript.install hex zeal_docsets
+mix archive.install hex zeal_docsets
 ```
 
 Build it from source locally:
 
 ```bash
 mix deps.get
-mix escript.build
-./zeal_docsets ~/projects/my_app
+mix archive.build
+mix archive.install --force
 ```
 
 ## Usage
-
-### As a standalone binary
-
-```bash
-zeal_docsets <project_path> [zeal_docsets_path] [options]
-```
 
 ### As a Mix task
 
@@ -84,22 +78,22 @@ Use `--workspace PATH` only if you want to override that location.
 
 ```bash
 # Production dependencies only
-zeal_docsets ~/projects/my_app
+mix zeal.docs ~/projects/my_app
 
 # Include development dependencies too
-zeal_docsets ~/projects/my_app --dev
+mix zeal.docs ~/projects/my_app --dev
 
 # Include development and test dependencies
-zeal_docsets ~/projects/my_app --dev --test
+mix zeal.docs ~/projects/my_app --dev --test
 
 # Use an explicit Zeal path
-zeal_docsets ~/projects/my_app ~/.local/share/Zeal/Zeal/docsets
+mix zeal.docs ~/projects/my_app ~/.local/share/Zeal/Zeal/docsets
 
 # Regenerate only phoenix
-zeal_docsets ~/projects/my_app --package phoenix --force
+mix zeal.docs ~/projects/my_app --package phoenix --force
 
 # Build without installing
-zeal_docsets ~/projects/my_app --no-install
+mix zeal.docs ~/projects/my_app --no-install
 
 # Generate docsets for all direct deps, including dev and test deps
 mix zeal.docs ~/projects/my_app --dev --test --force --concurrency 6
@@ -136,7 +130,7 @@ mix format
 mix test
 mix quality
 mix dialyzer
-mix escript.build
+mix archive.build
 ```
 
 ## License

@@ -1,6 +1,10 @@
 defmodule ZealDocsets.CLI do
   @moduledoc """
-  Command-line interface for the `zeal_docsets` escript.
+  Shared argument parsing and report rendering helpers used by
+  `mix zeal.docs`.
+
+  This module is not the primary public entrypoint of the package. The
+  recommended interface is the Mix task installed via `mix archive.install`.
   """
 
   alias ZealDocsets.Docset
@@ -17,27 +21,6 @@ defmodule ZealDocsets.CLI do
     test: :boolean,
     workspace: :string
   ]
-
-  @doc """
-  Entry point for the standalone escript executable.
-  """
-  @spec main([String.t()]) :: no_return()
-  def main(argv) do
-    Application.ensure_all_started(:inets)
-    Application.ensure_all_started(:ssl)
-
-    case parse_args(argv) do
-      {:ok, project_path, zeal_path, opts} ->
-        result = Runner.run(project_path, zeal_path, opts)
-        print_report(result)
-        System.halt(exit_code(result))
-
-      {:error, message} ->
-        IO.puts(:stderr, "error: #{message}")
-        IO.puts(:stderr, usage())
-        System.halt(1)
-    end
-  end
 
   @doc """
   Runs the docset generation pipeline and returns a structured result.
@@ -139,19 +122,4 @@ defmodule ZealDocsets.CLI do
 
   defp yes_no(true), do: "yes"
   defp yes_no(false), do: "no"
-
-  defp usage do
-    """
-    Usage: zeal_docsets <project_path> [zeal_docsets_path] [options]
-
-    Options:
-      --force           Regenerate even if version is up to date
-      --dev             Include :dev-only dependencies
-      --test            Include :test-only dependencies
-      --no-install      Generate docsets without copying them to the Zeal directory
-      --package NAME    Only build this package (repeatable)
-      --workspace PATH  Custom workspace directory
-      --concurrency N   Parallel builds (default: schedulers online)
-    """
-  end
 end

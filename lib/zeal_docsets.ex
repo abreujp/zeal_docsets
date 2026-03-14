@@ -10,11 +10,12 @@ defmodule ZealDocsets do
   [hexdocs.pm](https://hexdocs.pm) and packages it into a `.docset` bundle
   ready to be imported into Zeal.
 
-  ## CLI usage (escript)
+  ## Global Mix task usage
 
-      zeal_docsets <project_path> [zeal_docsets_path] [options]
+      mix archive.install hex zeal_docsets
+      mix zeal.docs <project_path> [zeal_docsets_path] [options]
 
-  ## Mix task usage
+  ## Local project usage
 
       mix zeal.docs <project_path> [zeal_docsets_path] [options]
 
