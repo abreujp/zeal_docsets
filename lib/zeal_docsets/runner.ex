@@ -78,7 +78,7 @@ defmodule ZealDocsets.Runner do
     deps =
       project_path
       |> Project.load!(project_opts)
-      |> filter_packages(Keyword.get_values(opts, :package))
+      |> select_packages(Keyword.get_values(opts, :package), extra_packages)
 
     total = length(deps)
 
@@ -160,8 +160,28 @@ defmodule ZealDocsets.Runner do
   def filter_packages(deps, []), do: deps
   def filter_packages(deps, packages), do: Enum.filter(deps, &(&1.package in packages))
 
+  @doc false
+  @spec select_packages([map()], [String.t()], [String.t()]) :: list()
+  def select_packages(deps, packages, extra_packages)
+
+  def select_packages(deps, [], []), do: deps
+
+  def select_packages(deps, [], extra_packages) do
+    extra_packages
+    |> Enum.map(&extra_package_name/1)
+    |> then(&filter_packages(deps, &1))
+  end
+
+  def select_packages(deps, packages, _extra_packages), do: filter_packages(deps, packages)
+
   defp maybe_put(opts, _key, nil), do: opts
   defp maybe_put(opts, key, value), do: Keyword.put(opts, key, value)
+
+  defp extra_package_name(spec) do
+    spec
+    |> String.split("@", parts: 2)
+    |> hd()
+  end
 
   @doc false
   @spec print_progress(progress_event()) :: :ok

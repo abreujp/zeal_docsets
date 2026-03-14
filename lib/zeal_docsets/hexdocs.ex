@@ -138,14 +138,26 @@ defmodule ZealDocsets.Hexdocs do
   # ---------------------------------------------------------------------------
 
   defp extract_html_paths(relative_path, root, base_uri) do
-    relative_path
-    |> destination_path(root, base_uri)
-    |> File.read!()
-    |> Floki.parse_document!()
-    |> Floki.find("*")
-    |> Enum.flat_map(fn node ->
-      Enum.flat_map(@tracked_attributes, &attribute_paths(node, &1, relative_path, base_uri))
-    end)
+    html =
+      relative_path
+      |> destination_path(root, base_uri)
+      |> File.read!()
+
+    doc = Floki.parse_document!(html)
+
+    attr_paths =
+      doc
+      |> Floki.find("*")
+      |> Enum.flat_map(fn node ->
+        Enum.flat_map(@tracked_attributes, &attribute_paths(node, &1, relative_path, base_uri))
+      end)
+
+    meta_refresh_paths =
+      html
+      |> extract_meta_refresh_target()
+      |> resolve_path(relative_path, base_uri)
+
+    (attr_paths ++ meta_refresh_paths)
     |> Enum.uniq()
   end
 
@@ -198,6 +210,19 @@ defmodule ZealDocsets.Hexdocs do
     case Floki.attribute(node, attr) do
       [value | _] -> resolve_path(value, relative_path, base_uri)
       _ -> []
+    end
+  end
+
+  @doc false
+  @spec extract_meta_refresh_target(String.t()) :: String.t() | nil
+  def extract_meta_refresh_target(html) do
+    case Regex.run(
+           ~r/<meta[^>]+http-equiv=["']refresh["'][^>]+content=["'][^"']*url=([^"'>]+)["']/i,
+           html,
+           capture: :all_but_first
+         ) do
+      [target] -> String.trim(target)
+      _ -> nil
     end
   end
 
@@ -276,10 +301,7 @@ defmodule ZealDocsets.Hexdocs do
   @doc false
   @spec required_resource?(String.t()) :: boolean()
   def required_resource?("/"), do: true
-
-  def required_resource?(path) do
-    String.ends_with?(path, "/index.html") or String.ends_with?(path, "/api-reference.html")
-  end
+  def required_resource?(path), do: String.ends_with?(path, "/index.html")
 
   defp ignored_extension?(path) do
     lower = String.downcase(path)

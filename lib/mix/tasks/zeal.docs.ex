@@ -9,6 +9,9 @@ defmodule Mix.Tasks.Zeal.Docs do
   Generates Zeal/Dash-compatible docsets for the direct Hex dependencies of the
   current Mix project, with optional extra Hex packages requested explicitly.
 
+  When `--extra-package` is used without any `--package` filter, only the
+  explicitly requested extra packages are built.
+
   The supported workflow is to run this task from the target project's root and
   pass `.` as the project path. If `zeal_docsets_path` is omitted, the default
   Zeal directory for the current platform is used.
@@ -70,7 +73,7 @@ defmodule Mix.Tasks.Zeal.Docs do
       --no-install      Generate docsets without copying them to the Zeal directory
       --package NAME    Only build this package (repeatable)
       --extra-package SPEC
-                        Also build a Hex package not declared in mix.exs.
+                        Build an extra Hex package not declared in mix.exs.
                         Accepts package or package@version and is repeatable.
       --workspace PATH  Custom workspace directory
       --concurrency N   Parallel builds (default: schedulers online)

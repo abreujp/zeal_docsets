@@ -46,6 +46,34 @@ defmodule ZealDocsets.RunnerTest do
     end
   end
 
+  describe "select_packages/3" do
+    setup do
+      deps = [
+        %ZealDocsets.Dep{app: :phoenix, package: "phoenix", version: "1.8.4"},
+        %ZealDocsets.Dep{app: :ecto, package: "ecto", version: "3.13.5"},
+        %ZealDocsets.Dep{app: nil, package: "plug", version: "1.16.1"}
+      ]
+
+      {:ok, deps: deps}
+    end
+
+    test "returns all deps when there are no package filters or extra packages", %{deps: deps} do
+      assert Runner.select_packages(deps, [], []) == deps
+    end
+
+    test "keeps only explicitly requested extra packages when no package filter is given", %{
+      deps: deps
+    } do
+      result = Runner.select_packages(deps, [], ["plug@1.16.1", "ecto"])
+      assert Enum.map(result, & &1.package) == ["ecto", "plug"]
+    end
+
+    test "prefers explicit package filters over extra package selection", %{deps: deps} do
+      result = Runner.select_packages(deps, ["phoenix"], ["plug"])
+      assert Enum.map(result, & &1.package) == ["phoenix"]
+    end
+  end
+
   describe "default_workspace/0" do
     test "returns an absolute path under the system temp dir" do
       ws = Runner.default_workspace()
@@ -202,7 +230,7 @@ defmodule ZealDocsets.RunnerTest do
       end)
     end
 
-    test "includes extra packages outside the project dependency list", %{
+    test "builds only extra packages when no package filter is given", %{
       project_root: project_root
     } do
       Fixtures.with_tmp_dir(fn base ->
@@ -223,7 +251,7 @@ defmodule ZealDocsets.RunnerTest do
           )
 
         packages = Enum.map(result.results, fn {_status, pkg, _path} -> pkg end)
-        assert Enum.sort(packages) == ["mypkg", "plug"]
+        assert packages == ["plug"]
         assert result.extra_packages == ["plug"]
       end)
     end
@@ -247,6 +275,30 @@ defmodule ZealDocsets.RunnerTest do
                  Enum.find(result.results, fn {_status, pkg, _path} -> pkg == "plug" end)
 
         assert path =~ "plug.docset"
+        assert Enum.map(result.results, fn {_status, pkg, _path} -> pkg end) == ["plug"]
+      end)
+    end
+
+    test "still supports mixing package filters with extra packages", %{
+      project_root: project_root
+    } do
+      Fixtures.with_tmp_dir(fn base ->
+        workspace = Path.join(base, "workspace")
+        zeal_path = Path.join(base, "zeal")
+
+        result =
+          Runner.run(project_root, zeal_path,
+            workspace: workspace,
+            no_install: true,
+            current_project: false,
+            package: "mypkg",
+            extra_package: "plug",
+            latest_version_fn: fn "plug" -> "1.16.1" end,
+            warn_missing_icon: false,
+            mirror_fn: fake_mirror()
+          )
+
+        assert Enum.map(result.results, fn {_status, pkg, _path} -> pkg end) == ["mypkg"]
       end)
     end
 

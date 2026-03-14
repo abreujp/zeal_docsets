@@ -37,7 +37,7 @@ Add `zeal_docsets` to the target project's `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:zeal_docsets, "~> 0.1.5", only: [:dev, :test], runtime: false}
+    {:zeal_docsets, "~> 0.1.6", only: [:dev, :test], runtime: false}
   ]
 end
 ```
@@ -88,7 +88,7 @@ Use `--workspace PATH` only if you want to override that location.
 | `--test` | Include `:test` dependencies |
 | `--no-install` | Generate docsets but skip copying to the Zeal directory |
 | `--package NAME` | Only build this package (repeatable) |
-| `--extra-package SPEC` | Also build a Hex package not declared in `mix.exs`; accepts `name` or `name@version` |
+| `--extra-package SPEC` | Build only this extra Hex package when no `--package` filter is given; accepts `name` or `name@version` |
 | `--workspace PATH` | Custom workspace directory for downloads and output |
 | `--concurrency N` | Parallel builds (default: number of schedulers online) |
 
@@ -110,14 +110,11 @@ mix zeal.docs . ~/.local/share/Zeal/Zeal/docsets
 # Regenerate only phoenix
 mix zeal.docs . --package phoenix --force
 
-# Also fetch ecto even if the project does not depend on it directly
+# Fetch only ecto even if the project does not depend on it directly
 mix zeal.docs . --extra-package ecto
 
-# Fetch a specific version from Hex.pm
+# Fetch only a specific version from Hex.pm
 mix zeal.docs . --extra-package phoenix_live_view@1.1.16
-
-# Build only the extra package, not the project's other direct dependencies
-mix zeal.docs . --package ash --extra-package ash --force
 
 # Replace an existing docset with another version of the same package
 mix zeal.docs . --extra-package ash@3.19.2 --force
@@ -133,8 +130,8 @@ mix zeal.docs . --dev --test --force --concurrency 6
 
 1. Dependency discovery - `mix.exs` is loaded in an isolated Mix context.
 2. Version resolution - `mix.lock` is parsed to obtain exact locked versions.
-3. Extra package resolution - any `--extra-package` entries are added, using the latest stable Hex.pm version by default.
-4. Filtering - git/path dependencies are excluded because they do not map cleanly to `hexdocs.pm`. If you want to build only an extra package, combine `--extra-package` with `--package`.
+3. Extra package resolution - any `--extra-package` entries are resolved from Hex.pm, using the latest stable version by default when no version is specified.
+4. Filtering - git/path dependencies are excluded because they do not map cleanly to `hexdocs.pm`. When `--extra-package` is used without `--package`, only the explicitly requested extra packages are built.
 5. Mirroring - HTML, CSS, JavaScript, fonts, and image assets are downloaded from `hexdocs.pm`, with textual progress updates for long-running downloads.
 6. Packaging - the mirrored files are assembled into a `.docset` bundle.
 7. Indexing - a SQLite search index is generated for modules, functions, types, callbacks, macros, commands, and guides.

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.5] - 2026-03-14
+## [0.1.6] - 2026-03-14
 
 ### Added
 
@@ -14,10 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change `--extra-package` to build only the explicitly requested extra packages when no `--package` filter is given.
 - Resolve the latest stable Hex.pm version automatically when `--extra-package` is given without an explicit version.
 - Update CLI output and documentation to reflect extra package support.
 - Show textual progress updates while resolving, downloading, building, and installing docsets.
-- Clarify the `floki` setup requirement and how to build only an extra package in the README examples.
+- Clarify the `floki` setup requirement and the new `--extra-package` behavior in the README examples.
 
 ### Fixed
 
