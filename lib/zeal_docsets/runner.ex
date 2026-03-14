@@ -53,7 +53,11 @@ defmodule ZealDocsets.Runner do
 
     deps =
       project_path
-      |> Project.load!(include_dev: include_dev, include_test: include_test)
+      |> Project.load!(
+        include_dev: include_dev,
+        include_test: include_test,
+        current_project: Keyword.get(opts, :current_project, false)
+      )
       |> filter_packages(Keyword.get_values(opts, :package))
 
     total = length(deps)

@@ -24,32 +24,38 @@ generated docsets.
 - Installs directly into Zeal's docsets directory.
 - Supports production-only mode by default, with optional `--dev` and `--test`.
 - Summarises docsets generated without a custom icon instead of printing one warning per package.
-- Installs globally as a Mix archive and runs as `mix zeal.docs`.
+- Integrates into a target Mix project as a development dependency.
 
 ## Installation
 
 `zeal_docsets` supports Elixir `~> 1.17` and newer.
 
-Install the Mix archive globally:
+Add `zeal_docsets` to the target project's `mix.exs`:
 
-```bash
-mix archive.install hex zeal_docsets
+```elixir
+defp deps do
+  [
+    {:zeal_docsets, "~> 0.1.2", only: :dev, runtime: false}
+  ]
+end
 ```
 
-Build it from source locally:
+Then fetch dependencies inside the target project:
 
 ```bash
 mix deps.get
-mix archive.build
-mix archive.install --force
 ```
+
+If the target project already depends on `floki` only in `:test`, you may need
+ to make it available in `:dev` as well (for example `only: [:dev, :test]`) so
+ `zeal_docsets` can use the same dependency while running `mix zeal.docs`.
 
 ## Usage
 
-### As a Mix task
+Run the task from inside the target project. The supported workflow is to execute it from the project's root and pass `.` as the project path:
 
 ```bash
-mix zeal.docs <project_path> [zeal_docsets_path] [options]
+mix zeal.docs . [zeal_docsets_path] [options]
 ```
 
 If `zeal_docsets_path` is omitted, a platform-specific Zeal directory is used:
@@ -78,25 +84,25 @@ Use `--workspace PATH` only if you want to override that location.
 
 ```bash
 # Production dependencies only
-mix zeal.docs ~/projects/my_app
+mix zeal.docs .
 
 # Include development dependencies too
-mix zeal.docs ~/projects/my_app --dev
+mix zeal.docs . --dev
 
 # Include development and test dependencies
-mix zeal.docs ~/projects/my_app --dev --test
+mix zeal.docs . --dev --test
 
 # Use an explicit Zeal path
-mix zeal.docs ~/projects/my_app ~/.local/share/Zeal/Zeal/docsets
+mix zeal.docs . ~/.local/share/Zeal/Zeal/docsets
 
 # Regenerate only phoenix
-mix zeal.docs ~/projects/my_app --package phoenix --force
+mix zeal.docs . --package phoenix --force
 
 # Build without installing
-mix zeal.docs ~/projects/my_app --no-install
+mix zeal.docs . --no-install
 
 # Generate docsets for all direct deps, including dev and test deps
-mix zeal.docs ~/projects/my_app --dev --test --force --concurrency 6
+mix zeal.docs . --dev --test --force --concurrency 6
 ```
 
 ## How it works
@@ -115,6 +121,7 @@ mix zeal.docs ~/projects/my_app --dev --test --force --concurrency 6
 - Some packages do not publish versioned docs on `hexdocs.pm`.
 - Some packages do not provide a `logo.png`, so their docset has no custom icon.
 - The default workspace lives outside the repository in the system temp directory.
+- If a target project already pins `floki` only for `:test`, it may need to expose `floki` in `:dev` too so `mix zeal.docs` can run from the development environment.
 
 ## Roadmap
 
@@ -130,7 +137,6 @@ mix format
 mix test
 mix quality
 mix dialyzer
-mix archive.build
 ```
 
 ## License

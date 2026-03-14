@@ -4,7 +4,8 @@ defmodule ZealDocsets.CLI do
   `mix zeal.docs`.
 
   This module is not the primary public entrypoint of the package. The
-  recommended interface is the Mix task installed via `mix archive.install`.
+  recommended interface is the Mix task made available when `zeal_docsets`
+  is added as a development dependency to a project.
   """
 
   alias ZealDocsets.Docset

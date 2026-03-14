@@ -22,7 +22,7 @@ defmodule ZealDocsets.MixProject do
         # and is covered by integration tests only.
         ignore_modules: [ZealDocsets.Hexdocs, Mix.Tasks.Zeal.Docs]
       ],
-      # The package is used through Mix tasks; no supervision tree is needed.
+      # The package is consumed as a Mix dependency that provides a custom task.
       start_permanent: false
     ]
   end
@@ -88,7 +88,6 @@ defmodule ZealDocsets.MixProject do
 
   defp aliases do
     [
-      build: ["archive.build"],
       quality: [
         "format --check-formatted",
         "compile --warnings-as-errors",

@@ -10,14 +10,13 @@ defmodule ZealDocsets do
   [hexdocs.pm](https://hexdocs.pm) and packages it into a `.docset` bundle
   ready to be imported into Zeal.
 
-  ## Global Mix task usage
+  ## Usage as a project dependency
 
-      mix archive.install hex zeal_docsets
-      mix zeal.docs <project_path> [zeal_docsets_path] [options]
+      # In the target project's mix.exs
+      {:zeal_docsets, "~> 0.1.2", only: :dev, runtime: false}
 
-  ## Local project usage
-
-      mix zeal.docs <project_path> [zeal_docsets_path] [options]
+      # Then inside the target project
+      mix zeal.docs . [zeal_docsets_path] [options]
 
   See `ZealDocsets.CLI` for the full list of options.
   """

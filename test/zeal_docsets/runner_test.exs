@@ -78,6 +78,7 @@ defmodule ZealDocsets.RunnerTest do
           Runner.run(project_root, zeal_path,
             workspace: workspace,
             no_install: true,
+            current_project: false,
             warn_missing_icon: false,
             mirror_fn: fake_mirror()
           )
@@ -101,6 +102,7 @@ defmodule ZealDocsets.RunnerTest do
           Runner.run(project_root, zeal_path,
             workspace: workspace,
             no_install: true,
+            current_project: false,
             warn_missing_icon: false,
             mirror_fn: fake_mirror()
           )
@@ -120,6 +122,7 @@ defmodule ZealDocsets.RunnerTest do
           Runner.run(project_root, zeal_path,
             workspace: workspace,
             no_install: true,
+            current_project: false,
             package: "mypkg",
             warn_missing_icon: false,
             mirror_fn: fake_mirror()
@@ -139,6 +142,7 @@ defmodule ZealDocsets.RunnerTest do
           Runner.run(project_root, zeal_path,
             workspace: workspace,
             no_install: true,
+            current_project: false,
             dev: true,
             test: true,
             warn_missing_icon: false,
@@ -159,6 +163,7 @@ defmodule ZealDocsets.RunnerTest do
           Runner.run(project_root, zeal_path,
             workspace: workspace,
             no_install: true,
+            current_project: false,
             warn_missing_icon: false,
             mirror_fn: failing_mirror()
           )

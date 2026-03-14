@@ -9,12 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Switch the recommended global installation method to `mix archive.install`, which works correctly with the project's Mix integration and native dependencies.
+- Remove the incorrect global-installation guidance and document the supported usage as a Mix development dependency.
+- Reuse the current Mix project context when `mix zeal.docs` runs from inside the target project.
 
 ### Changed
 
-- Stop documenting `escript` as the primary distribution format.
-- Document global usage through `mix zeal.docs` installed from a Mix archive.
+- Stop documenting `escript` and Mix archive as supported distribution formats.
+- Document `mix zeal.docs` as a task provided by adding `zeal_docsets` to a target project's development dependencies.
 
 ## [0.1.1] - 2026-03-14
 

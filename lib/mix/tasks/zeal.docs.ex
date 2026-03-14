@@ -6,31 +6,41 @@ defmodule Mix.Tasks.Zeal.Docs do
   @shortdoc "Generate Zeal docsets from a Mix project's dependencies"
 
   @moduledoc """
-  Generates Zeal/Dash-compatible docsets for the direct Hex dependencies of a
-  Mix project.
+  Generates Zeal/Dash-compatible docsets for the direct Hex dependencies of the
+  current Mix project.
 
-  If `zeal_docsets_path` is omitted, the default Zeal directory for the current
-  platform is used.
+  The supported workflow is to run this task from the target project's root and
+  pass `.` as the project path. If `zeal_docsets_path` is omitted, the default
+  Zeal directory for the current platform is used.
 
   ## Usage
 
-      mix zeal.docs <project_path> [zeal_docsets_path] [options]
+      mix zeal.docs . [zeal_docsets_path] [options]
 
   ## Examples
 
-      mix zeal.docs ~/projects/my_app
-      mix zeal.docs ~/projects/my_app ~/.local/share/Zeal/Zeal/docsets --dev
-      mix zeal.docs ~/projects/my_app --dev --test --force --concurrency 6
-      mix zeal.docs ~/projects/my_app --package phoenix --force
+      mix zeal.docs .
+      mix zeal.docs . ~/.local/share/Zeal/Zeal/docsets --dev
+      mix zeal.docs . --dev --test --force --concurrency 6
+      mix zeal.docs . --package phoenix --force
   """
 
   @impl true
   def run(args) do
-    Mix.Task.run("app.start")
+    Application.ensure_all_started(:inets)
+    Application.ensure_all_started(:ssl)
+    Application.ensure_all_started(:mix)
+    Application.ensure_all_started(:exqlite)
 
     case CLI.parse_args(args) do
       {:ok, project_path, zeal_path, opts} ->
-        result = CLI.run(project_path, zeal_path, opts)
+        result =
+          CLI.run(
+            project_path,
+            zeal_path,
+            Keyword.put(opts, :current_project, current_project?(project_path))
+          )
+
         CLI.print_report(result)
 
         if CLI.exit_code(result) != 0 do
@@ -42,9 +52,14 @@ defmodule Mix.Tasks.Zeal.Docs do
     end
   end
 
+  defp current_project?(project_path) do
+    Mix.Project.get() != nil and
+      Path.expand(project_path, File.cwd!()) == Path.expand(File.cwd!())
+  end
+
   defp usage do
     """
-    Usage: mix zeal.docs <project_path> [zeal_docsets_path] [options]
+    Usage: mix zeal.docs . [zeal_docsets_path] [options]
 
     Options:
       --force           Regenerate even if version is up to date

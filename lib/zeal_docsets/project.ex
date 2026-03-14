@@ -4,12 +4,9 @@ defmodule ZealDocsets.Project do
 
   Combines information from two sources:
 
-  - **`mix.exs`** — identifies the *direct* dependencies of the project
-    (the packages explicitly listed by the developer), their version
-    requirements, and which Mix environments they belong to.
-
-  - **`mix.lock`** — provides the *exact* resolved versions that are
-    currently locked (i.e. what `mix deps.get` would install).
+  - **`mix.exs`** - identifies the direct dependencies of the project,
+    their version requirements, and which Mix environments they belong to.
+  - **`mix.lock`** - provides the exact resolved versions currently locked.
 
   Only Hex-sourced dependencies available in the `:prod` environment are
   included by default. Git and path dependencies are excluded because they may
@@ -19,20 +16,23 @@ defmodule ZealDocsets.Project do
   alias ZealDocsets.Dep
 
   @doc """
-  Loads and returns the list of resolved direct Hex dependencies for the
-  Mix project at `path`.
+  Loads and returns the list of resolved direct Hex dependencies for the Mix
+  project at `path`.
 
   ## Options
 
-  - `:include_dev`  — when `true`, also includes dependencies declared for the
-                      `:dev` environment. Defaults to `false`.
-  - `:include_test` — when `true`, also includes dependencies declared for the
-                      `:test` environment. Defaults to `false`.
+  - `:include_dev` - when `true`, also includes dependencies declared for the
+    `:dev` environment. Defaults to `false`.
+  - `:include_test` - when `true`, also includes dependencies declared for the
+    `:test` environment. Defaults to `false`.
+  - `:current_project` - when `true`, reads dependency information from the
+    currently loaded Mix project instead of reloading the project from disk.
+    This is the supported mode when `zeal_docsets` is used as a dependency.
 
   ## Returns
 
-  A list of `%ZealDocsets.Dep{}` structs sorted alphabetically by package
-  name. Each struct has a confirmed `:hex` source and a non-nil `:version`.
+  A list of `%ZealDocsets.Dep{}` structs sorted alphabetically by package name.
+  Each struct has a confirmed `:hex` source and a non-nil `:version`.
 
   ## Raises
 
@@ -42,13 +42,14 @@ defmodule ZealDocsets.Project do
   def load!(path, opts \\ []) do
     include_dev = Keyword.get(opts, :include_dev, false)
     include_test = Keyword.get(opts, :include_test, false)
+    current_project = Keyword.get(opts, :current_project, false)
     project_path = Path.expand(path)
 
     ensure_project_files!(project_path)
 
     deps =
       project_path
-      |> direct_deps()
+      |> direct_deps(current_project)
       |> Enum.map(&to_dep/1)
       |> Enum.filter(&keep_dep?(&1, include_dev, include_test))
 
@@ -70,7 +71,11 @@ defmodule ZealDocsets.Project do
     end
   end
 
-  defp direct_deps(project_path) do
+  defp direct_deps(_project_path, true) do
+    Mix.Project.config()[:deps] || []
+  end
+
+  defp direct_deps(project_path, false) do
     project_name = temporary_project_name(project_path)
 
     Mix.Project.in_project(project_name, project_path, fn _module ->

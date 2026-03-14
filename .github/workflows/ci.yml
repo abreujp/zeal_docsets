@@ -54,8 +54,8 @@ jobs:
       - name: Run tests
         run: mix test
 
-  build-escript:
-    name: Build escript
+  build-package:
+    name: Build Hex package
     runs-on: ubuntu-latest
     needs: test
 
@@ -77,8 +77,8 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
-      - name: Build escript
-        run: mix escript.build
+      - name: Build Hex package
+        run: mix hex.build
 
-      - name: Verify binary exists and is executable
-        run: test -x zeal_docsets
+      - name: Verify package tarball exists
+        run: test -f zeal_docsets-*.tar
