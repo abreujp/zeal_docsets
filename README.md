@@ -35,7 +35,7 @@ Add `zeal_docsets` to the target project's `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:zeal_docsets, "~> 0.1.2", only: :dev, runtime: false}
+    {:zeal_docsets, "~> 0.1.4", only: [:dev, :test], runtime: false}
   ]
 end
 ```

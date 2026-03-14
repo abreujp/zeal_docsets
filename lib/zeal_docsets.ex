@@ -13,7 +13,7 @@ defmodule ZealDocsets do
   ## Usage as a project dependency
 
       # In the target project's mix.exs
-      {:zeal_docsets, "~> 0.1.2", only: :dev, runtime: false}
+      {:zeal_docsets, "~> 0.1.4", only: [:dev, :test], runtime: false}
 
       # Then inside the target project
       mix zeal.docs . [zeal_docsets_path] [options]
