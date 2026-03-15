@@ -1,5 +1,5 @@
 defmodule ZealDocsets.RunnerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias ZealDocsets.Fixtures
   alias ZealDocsets.Runner
