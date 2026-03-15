@@ -84,4 +84,18 @@ defmodule ZealDocsets.HexPmTest do
       assert HexPm.package_api_url("ecto") == "https://hex.pm/api/packages/ecto"
     end
   end
+
+  describe "latest_stable_version!/1 (1-arity public entry)" do
+    test "calls the correct Hex.pm URL for the given package" do
+      # Capture which URL is actually requested to confirm the 1-arity delegates properly
+      body = ~s({"latest_stable_version":"1.16.1"})
+
+      request_fn = fn url ->
+        assert url == "https://hex.pm/api/packages/plug"
+        {:ok, body}
+      end
+
+      assert HexPm.latest_stable_version!("plug", request_fn: request_fn) == "1.16.1"
+    end
+  end
 end

@@ -17,5 +17,21 @@ defmodule ZealDocsets.HexPackageTest do
         HexPackage.validate_name!("bad package name")
       end
     end
+
+    test "accepts names starting with a digit (Hex.pm allows this)" do
+      assert HexPackage.validate_name!("1invalid") == "1invalid"
+    end
+
+    test "raises for names starting with a hyphen" do
+      assert_raise ArgumentError, ~r/invalid Hex package name/, fn ->
+        HexPackage.validate_name!("-invalid")
+      end
+    end
+
+    test "raises for empty string" do
+      assert_raise ArgumentError, ~r/invalid Hex package name/, fn ->
+        HexPackage.validate_name!("")
+      end
+    end
   end
 end

@@ -123,18 +123,20 @@ defmodule ZealDocsets.IndexTest do
       end)
     end
 
-    test "overwrites an existing database" do
+    test "overwrites an existing database without accumulating duplicate entries" do
       Fixtures.with_tmp_dir(fn base ->
         docs_root = Fixtures.write_docs_fixture(Path.join(base, "docs"))
         db_path = Path.join(base, "docSet.dsidx")
 
         Index.build!(db_path, docs_root, "mypkg")
-        first_size = File.stat!(db_path).size
+        first_rows = Fixtures.read_index(db_path)
 
         Index.build!(db_path, docs_root, "mypkg")
-        second_size = File.stat!(db_path).size
+        second_rows = Fixtures.read_index(db_path)
 
-        assert first_size == second_size
+        # A fresh rebuild must produce exactly the same rows — not accumulate duplicates
+        assert length(first_rows) == length(second_rows)
+        assert first_rows == second_rows
       end)
     end
 
@@ -149,6 +151,74 @@ defmodule ZealDocsets.IndexTest do
 
         rows = Fixtures.read_index(db_path)
         assert {"MyModule", "Module", "docs/mypkg/my_module.html"} in rows
+      end)
+    end
+
+    test "skips HTML pages that are neither module nor guide pages" do
+      Fixtures.with_tmp_dir(fn base ->
+        docs_root = Path.join(base, "docs")
+        File.mkdir_p!(docs_root)
+
+        # A page with no page-module or page-extra class produces no index entries
+        File.write!(Path.join(docs_root, "changelog.html"), """
+        <!DOCTYPE html>
+        <html><head><title>Changelog</title></head>
+        <body><main class="page-changelog"><h1>Changelog</h1></main></body>
+        </html>
+        """)
+
+        db_path = Path.join(base, "docSet.dsidx")
+        Index.build!(db_path, docs_root, "mypkg")
+
+        rows = Fixtures.read_index(db_path)
+        paths = Enum.map(rows, &elem(&1, 2))
+        refute "docs/mypkg/changelog.html" in paths
+      end)
+    end
+
+    test "uses file basename as module name when h1 has no span[translate=no]" do
+      Fixtures.with_tmp_dir(fn base ->
+        docs_root = Path.join(base, "docs")
+        File.mkdir_p!(docs_root)
+
+        File.write!(Path.join(docs_root, "my_module.html"), """
+        <!DOCTYPE html>
+        <html><head><title>MyModule</title></head>
+        <body>
+          <main class="page-module">
+            <h1>MyModule</h1>
+          </main>
+        </body>
+        </html>
+        """)
+
+        db_path = Path.join(base, "docSet.dsidx")
+        Index.build!(db_path, docs_root, "mypkg")
+
+        rows = Fixtures.read_index(db_path)
+        # Falls back to filename without extension
+        assert {"my_module", "Module", "docs/mypkg/my_module.html"} in rows
+      end)
+    end
+
+    test "ignores guide pages without a title element" do
+      Fixtures.with_tmp_dir(fn base ->
+        docs_root = Path.join(base, "docs")
+        File.mkdir_p!(docs_root)
+
+        File.write!(Path.join(docs_root, "no-title.html"), """
+        <!DOCTYPE html>
+        <html><head></head>
+        <body><main class="page-extra"><h1>No Title</h1></main></body>
+        </html>
+        """)
+
+        db_path = Path.join(base, "docSet.dsidx")
+        Index.build!(db_path, docs_root, "mypkg")
+
+        rows = Fixtures.read_index(db_path)
+        paths = Enum.map(rows, &elem(&1, 2))
+        refute "docs/mypkg/no-title.html" in paths
       end)
     end
   end

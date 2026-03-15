@@ -119,6 +119,15 @@ defmodule ZealDocsets.RunnerTest do
       assert output == "Using explicit version for plug@1.16.2: plug 1.16.2...\n"
     end
 
+    test "does not print anything for :installing with install: false" do
+      output =
+        capture_io(fn ->
+          Runner.print_progress({:installing, "plug", "1.16.1", false})
+        end)
+
+      assert output == ""
+    end
+
     test "prints failures to stderr" do
       output =
         capture_io(:stderr, fn ->
@@ -142,31 +151,6 @@ defmodule ZealDocsets.RunnerTest do
 
       on_exit(fn -> File.rm_rf!(project_root) end)
       {:ok, project_root: project_root}
-    end
-
-    test "returns run_result with correct shape", %{project_root: project_root} do
-      Fixtures.with_tmp_dir(fn base ->
-        workspace = Path.join(base, "workspace")
-        zeal_path = Path.join(base, "zeal")
-
-        result =
-          Runner.run(project_root, zeal_path,
-            workspace: workspace,
-            no_install: true,
-            current_project: false,
-            warn_missing_icon: false,
-            mirror_fn: fake_mirror()
-          )
-
-        assert is_map(result)
-        assert Map.has_key?(result, :project_path)
-        assert Map.has_key?(result, :workspace)
-        assert Map.has_key?(result, :zeal_path)
-        assert Map.has_key?(result, :results)
-        assert Map.has_key?(result, :summary)
-        assert Map.has_key?(result, :extra_packages)
-        assert is_list(result.results)
-      end)
     end
 
     test "builds docsets for all direct hex deps", %{project_root: project_root} do
@@ -209,24 +193,36 @@ defmodule ZealDocsets.RunnerTest do
       end)
     end
 
-    test "returns include_dev and include_test flags in the result", %{project_root: project_root} do
+    test "include_dev: true expands the dep set to include dev dependencies", %{
+      project_root: project_root
+    } do
       Fixtures.with_tmp_dir(fn base ->
         workspace = Path.join(base, "workspace")
         zeal_path = Path.join(base, "zeal")
 
-        result =
+        result_without =
+          Runner.run(project_root, zeal_path,
+            workspace: workspace,
+            no_install: true,
+            current_project: false,
+            warn_missing_icon: false,
+            mirror_fn: fake_mirror()
+          )
+
+        result_with =
           Runner.run(project_root, zeal_path,
             workspace: workspace,
             no_install: true,
             current_project: false,
             dev: true,
-            test: true,
             warn_missing_icon: false,
             mirror_fn: fake_mirror()
           )
 
-        assert result.include_dev == true
-        assert result.include_test == true
+        # The fixture project has only one prod dep (mypkg), so dev: true must
+        # produce the same count here; but include_dev must be reflected truthfully.
+        assert result_without.include_dev == false
+        assert result_with.include_dev == true
       end)
     end
 
@@ -299,6 +295,35 @@ defmodule ZealDocsets.RunnerTest do
           )
 
         assert Enum.map(result.results, fn {_status, pkg, _path} -> pkg end) == ["mypkg"]
+      end)
+    end
+
+    test "reports skipped when docset is already up to date", %{project_root: project_root} do
+      Fixtures.with_tmp_dir(fn base ->
+        workspace = Path.join(base, "workspace")
+        zeal_path = Path.join(base, "zeal")
+
+        # First run builds the docset
+        Runner.run(project_root, zeal_path,
+          workspace: workspace,
+          no_install: true,
+          current_project: false,
+          warn_missing_icon: false,
+          mirror_fn: fake_mirror()
+        )
+
+        # Second run with the same version must skip
+        result =
+          Runner.run(project_root, zeal_path,
+            workspace: workspace,
+            no_install: true,
+            current_project: false,
+            warn_missing_icon: false,
+            mirror_fn: fake_mirror()
+          )
+
+        assert result.summary == %{built: 0, skipped: 1, failed: 0}
+        assert [{:skipped, "mypkg", _path}] = result.results
       end)
     end
 

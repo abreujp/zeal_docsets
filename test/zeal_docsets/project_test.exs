@@ -112,6 +112,90 @@ defmodule ZealDocsets.ProjectTest do
     end
   end
 
+  test "raises for extra package spec with multiple @ signs" do
+    assert_raise ArgumentError, ~r/invalid --extra-package/, fn ->
+      Project.parse_extra_package_spec!("ecto@3.13.5@extra")
+    end
+  end
+
+  test "parses deps from the currently loaded mix project via current_project: true",
+       %{project_root: project_root} do
+    write_fixture_project(project_root)
+
+    # Load via current_project: false first to confirm the fixture is valid,
+    # then use Mix.Project.in_project to simulate the current_project: true path.
+    Mix.Project.in_project(
+      :fixture_current_project,
+      project_root,
+      fn _mod ->
+        deps = Project.load!(project_root, current_project: true)
+        packages = Enum.map(deps, & &1.package)
+        assert "ecto" in packages
+        assert "phoenix" in packages
+      end
+    )
+  end
+
+  test "handles mix.lock entries with 7-tuple format (older lockfile format)",
+       %{project_root: project_root} do
+    module_name = "FixtureProject#{System.unique_integer([:positive])}.MixProject"
+
+    File.write!(
+      Path.join(project_root, "mix.exs"),
+      """
+      defmodule #{module_name} do
+        use Mix.Project
+        def project, do: [app: :fixture_project, version: "0.1.0", elixir: "~> 1.17", deps: deps()]
+        def application, do: [extra_applications: [:logger]]
+        defp deps, do: [{:ecto, "~> 3.0"}]
+      end
+      """
+    )
+
+    # 7-tuple format (no outer_checksum) used in older Mix versions
+    File.write!(
+      Path.join(project_root, "mix.lock"),
+      """
+      %{
+        ecto: {:hex, :ecto, "3.0.0", "checksum", [:mix], [], "hexpm"}
+      }
+      """
+    )
+
+    deps = Project.load!(project_root)
+    assert {"ecto", "3.0.0"} in Enum.map(deps, &{&1.package, &1.version})
+  end
+
+  test "excludes path deps from results", %{project_root: project_root} do
+    module_name = "FixtureProject#{System.unique_integer([:positive])}.MixProject"
+
+    File.write!(
+      Path.join(project_root, "mix.exs"),
+      """
+      defmodule #{module_name} do
+        use Mix.Project
+        def project, do: [app: :fixture_project, version: "0.1.0", elixir: "~> 1.17", deps: deps()]
+        def application, do: [extra_applications: [:logger]]
+        defp deps, do: [{:local_lib, path: "../local_lib"}, {:ecto, "~> 3.0"}]
+      end
+      """
+    )
+
+    File.write!(
+      Path.join(project_root, "mix.lock"),
+      """
+      %{
+        ecto: {:hex, :ecto, "3.0.0", "checksum", [:mix], [], "hexpm", "outer"}
+      }
+      """
+    )
+
+    deps = Project.load!(project_root)
+    packages = Enum.map(deps, & &1.package)
+    refute "local_lib" in packages
+    assert "ecto" in packages
+  end
+
   defp write_fixture_project(project_root) do
     module_name = "FixtureProject#{System.unique_integer([:positive])}.MixProject"
 

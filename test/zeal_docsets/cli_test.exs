@@ -193,4 +193,79 @@ defmodule ZealDocsets.CLITest do
       assert String.ends_with?(path, "docsets")
     end
   end
+
+  describe "run/3" do
+    setup do
+      project_root =
+        Path.join(
+          System.tmp_dir!(),
+          "zeal_cli_fixture_#{System.unique_integer([:positive])}"
+        )
+
+      File.mkdir_p!(project_root)
+      write_fixture_project(project_root)
+      on_exit(fn -> File.rm_rf!(project_root) end)
+      {:ok, project_root: project_root}
+    end
+
+    test "returns a run_result with the build summary and installs a default progress_fn",
+         %{project_root: project_root} do
+      ZealDocsets.Fixtures.with_tmp_dir(fn base ->
+        workspace = Path.join(base, "workspace")
+        zeal_path = Path.join(base, "zeal")
+
+        output =
+          capture_io(fn ->
+            send(
+              self(),
+              CLI.run(project_root, zeal_path,
+                workspace: workspace,
+                no_install: true,
+                current_project: false,
+                warn_missing_icon: false,
+                mirror_fn: fake_mirror()
+              )
+            )
+          end)
+
+        # CLI.run must wire up Runner.print_progress as the default progress_fn,
+        # so "Starting" must appear on stdout even without an explicit progress_fn.
+        assert output =~ "Starting mypkg"
+
+        assert_received %{
+          summary: %{built: 1, skipped: 0, failed: 0},
+          results: [{:ok, "mypkg", _}]
+        }
+      end)
+    end
+  end
+
+  defp write_fixture_project(project_root) do
+    module_name = "CLIFixture#{System.unique_integer([:positive])}.MixProject"
+
+    File.write!(Path.join(project_root, "mix.exs"), """
+    defmodule #{module_name} do
+      use Mix.Project
+      def project, do: [app: :cli_fixture, version: "0.1.0", elixir: "~> 1.17", deps: deps()]
+      def application, do: [extra_applications: [:logger]]
+      defp deps, do: [{:mypkg, "~> 1.0"}]
+    end
+    """)
+
+    File.write!(Path.join(project_root, "mix.lock"), """
+    %{
+      mypkg: {:hex, :mypkg, "1.0.0", "abc", [:mix], [], "hexpm", "def"}
+    }
+    """)
+  end
+
+  defp fake_mirror do
+    fn pkg, version, downloads_root ->
+      mirror_root = Path.join([downloads_root, pkg, version])
+      File.rm_rf!(mirror_root)
+      File.mkdir_p!(mirror_root)
+      ZealDocsets.Fixtures.write_docs_fixture(mirror_root, pkg)
+      mirror_root
+    end
+  end
 end

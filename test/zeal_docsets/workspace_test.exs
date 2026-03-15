@@ -28,14 +28,19 @@ defmodule ZealDocsets.WorkspaceTest do
     end
 
     test "expands relative paths to absolute" do
-      Fixtures.with_tmp_dir(fn _base ->
-        result =
-          Workspace.ensure!(
-            System.tmp_dir!() <> "/zeal_ws_test_#{System.unique_integer([:positive])}"
-          )
+      # Change to a known directory so a relative path is predictable
+      original_cwd = File.cwd!()
+
+      Fixtures.with_tmp_dir(fn base ->
+        File.cd!(base)
+
+        relative = "zeal_ws_relative_#{System.unique_integer([:positive])}"
+        result = Workspace.ensure!(relative)
 
         assert Path.type(result) == :absolute
+        assert result == Path.join(base, relative)
         File.rm_rf!(result)
+        File.cd!(original_cwd)
       end)
     end
   end
