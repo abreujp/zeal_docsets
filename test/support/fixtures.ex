@@ -45,38 +45,58 @@ defmodule ZealDocsets.Fixtures do
   end
 
   def module_html do
+    # Mirrors real ExDoc (v0.40) output: the heading carries a `<wbr />`
+    # line-break hint, and summary signatures use the full call signature as
+    # their link text (not the clean `name/arity` anchor).
     """
     <!DOCTYPE html>
     <html>
     <head><title>MyModule — mypkg v1.0.0</title></head>
     <body>
       <main class="page-module">
-        <h1><span translate="no">MyModule</span></h1>
+        <h1>
+          <span translate="no">My<wbr />Module</span>
+          <small class="app-vsn" translate="no">(mypkg v1.0.0)</small>
+        </h1>
 
-        <div class="summary-functions">
-          <div class="summary-signature">
-            <a href="#hello/1">hello/1</a>
+        <div class="summary-functions summary">
+          <h3><a href="#functions">Functions</a></h3>
+          <div class="summary-row">
+            <div class="summary-signature">
+              <a href="#hello/1" translate="no">hello(name)</a>
+            </div>
           </div>
-          <div class="summary-signature">
-            <a href="#world/0">world/0</a>
-          </div>
-        </div>
-
-        <div class="summary-types">
-          <div class="summary-signature">
-            <a href="#t:my_type/0">my_type/0</a>
-          </div>
-        </div>
-
-        <div class="summary-callbacks">
-          <div class="summary-signature">
-            <a href="#c:on_event/1">on_event/1</a>
+          <div class="summary-row">
+            <div class="summary-signature">
+              <a href="#world/0" translate="no">world()</a>
+            </div>
           </div>
         </div>
 
-        <div class="summary-macros">
-          <div class="summary-signature">
-            <a href="#my_macro/1">my_macro/1</a>
+        <div class="summary-types summary">
+          <h3><a href="#types">Types</a></h3>
+          <div class="summary-row">
+            <div class="summary-signature">
+              <a href="#t:my_type/0" translate="no">my_type()</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-callbacks summary">
+          <h3><a href="#callbacks">Callbacks</a></h3>
+          <div class="summary-row">
+            <div class="summary-signature">
+              <a href="#c:on_event/1" translate="no">on_event(event)</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-macros summary">
+          <h3><a href="#macros">Macros</a></h3>
+          <div class="summary-row">
+            <div class="summary-signature">
+              <a href="#my_macro/1" translate="no">my_macro(opts)</a>
+            </div>
           </div>
         </div>
       </main>
