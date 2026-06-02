@@ -61,6 +61,7 @@ defmodule ZealDocsets.IndexTest do
         Index.build!(db_path, docs_root, "mypkg")
 
         rows = Fixtures.read_index(db_path)
+
         assert {"MyModule.on_event/1", "Callback", "docs/mypkg/my_module.html#c:on_event/1"} in rows
       end)
     end
