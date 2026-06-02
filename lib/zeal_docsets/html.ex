@@ -3,6 +3,8 @@ defmodule ZealDocsets.HTML do
   Utility helpers for extracting text and attributes from Floki-parsed HTML.
   """
 
+  @type text_opts() :: [{:sep, String.t()}]
+
   @doc """
   Extracts and normalises the text content of a list of Floki nodes.
 
@@ -10,13 +12,20 @@ defmodule ZealDocsets.HTML do
   whitespace, and returns `nil` for empty or blank results.
 
   Returns `nil` when `nodes` is `nil`.
-  """
-  @spec text(Floki.html_tree() | nil) :: String.t() | nil
-  def text(nil), do: nil
 
-  def text(nodes) do
+  Options:
+
+  - `:sep` - the separator between text nodes. Defaults to a single space (`" "`).
+  """
+  @spec text(Floki.html_tree() | nil, text_opts()) :: String.t() | nil
+  def text(maybe_nodes, opts \\ [])
+  def text(nil, _opts), do: nil
+
+  def text(nodes, opts) do
+    opts = Keyword.validate!(opts, sep: " ")
+
     nodes
-    |> Floki.text(sep: " ")
+    |> Floki.text(sep: opts[:sep])
     |> String.replace(~r/\s+/, " ")
     |> String.trim()
     |> blank_to_nil()

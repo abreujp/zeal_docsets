@@ -23,6 +23,10 @@ defmodule ZealDocsets.Index do
   - **Callback** — behaviour callbacks in module summary sections.
   - **Macro** — macros in module summary sections.
   - **Guide** — extra pages (`main.page-extra`), such as tutorials and guides.
+
+  Function/type/callback/macro entries are named with their fully-qualified
+  `Module.member/arity` (e.g. `Postgrex.Types.define/3`), so that Dash/Zeal can
+  resolve qualified lookups like `Postgrex.Types.define`.
   """
 
   alias Exqlite
@@ -131,21 +135,40 @@ defmodule ZealDocsets.Index do
 
   defp module_page_entries(document, relative_path, html_path) do
     module_name =
-      Floki.find(document, "main.page-module h1 span[translate=no]")
-      |> HTML.text()
+      document
+      |> Floki.find("main.page-module h1 span[translate=no]")
+      |> HTML.text(sep: "")
       |> Kernel.||(Path.rootname(Path.basename(html_path)))
 
     summary_entries =
       Enum.flat_map(@summary_type_map, fn {class_name, type} ->
         Floki.find(document, ".#{class_name} .summary-signature a")
         |> Enum.map(fn node ->
-          {HTML.text([node]), type, relative_path <> (HTML.attr(node, "href") || "")}
+          href = HTML.attr(node, "href") || ""
+          {summary_name(module_name, href, node), type, relative_path <> href}
         end)
       end)
 
     [{module_name, "Module", relative_path} | summary_entries]
     |> Enum.reject(fn {name, _type, path} -> is_nil(name) or is_nil(path) end)
   end
+
+  # Builds a module-qualified entry name (e.g. `Postgrex.Types.define/3`) so that
+  # Dash/Zeal can resolve fully-qualified lookups. The clean member name and arity
+  # come from the anchor `href` (`#define/3`, `#t:oid/0`, `#c:on_event/1`); we fall
+  # back to the raw signature text when the href is missing or unexpected.
+  defp summary_name(module_name, href, node) do
+    case member_name(href) do
+      nil -> HTML.text([node])
+      member when is_nil(module_name) -> member
+      member -> "#{module_name}.#{member}"
+    end
+  end
+
+  defp member_name("#t:" <> rest), do: HTML.blank_to_nil(rest)
+  defp member_name("#c:" <> rest), do: HTML.blank_to_nil(rest)
+  defp member_name("#" <> rest), do: HTML.blank_to_nil(rest)
+  defp member_name(_), do: nil
 
   defp guide_page_entries(document, relative_path) do
     case Floki.find(document, "title") |> HTML.text() do

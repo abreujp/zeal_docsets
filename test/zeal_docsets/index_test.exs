@@ -36,8 +36,8 @@ defmodule ZealDocsets.IndexTest do
         Index.build!(db_path, docs_root, "mypkg")
 
         rows = Fixtures.read_index(db_path)
-        assert {"hello/1", "Function", "docs/mypkg/my_module.html#hello/1"} in rows
-        assert {"world/0", "Function", "docs/mypkg/my_module.html#world/0"} in rows
+        assert {"MyModule.hello/1", "Function", "docs/mypkg/my_module.html#hello/1"} in rows
+        assert {"MyModule.world/0", "Function", "docs/mypkg/my_module.html#world/0"} in rows
       end)
     end
 
@@ -49,7 +49,7 @@ defmodule ZealDocsets.IndexTest do
         Index.build!(db_path, docs_root, "mypkg")
 
         rows = Fixtures.read_index(db_path)
-        assert {"my_type/0", "Type", "docs/mypkg/my_module.html#t:my_type/0"} in rows
+        assert {"MyModule.my_type/0", "Type", "docs/mypkg/my_module.html#t:my_type/0"} in rows
       end)
     end
 
@@ -61,7 +61,7 @@ defmodule ZealDocsets.IndexTest do
         Index.build!(db_path, docs_root, "mypkg")
 
         rows = Fixtures.read_index(db_path)
-        assert {"on_event/1", "Callback", "docs/mypkg/my_module.html#c:on_event/1"} in rows
+        assert {"MyModule.on_event/1", "Callback", "docs/mypkg/my_module.html#c:on_event/1"} in rows
       end)
     end
 
@@ -73,7 +73,31 @@ defmodule ZealDocsets.IndexTest do
         Index.build!(db_path, docs_root, "mypkg")
 
         rows = Fixtures.read_index(db_path)
-        assert {"my_macro/1", "Macro", "docs/mypkg/my_module.html#my_macro/1"} in rows
+        assert {"MyModule.my_macro/1", "Macro", "docs/mypkg/my_module.html#my_macro/1"} in rows
+      end)
+    end
+
+    test "collapses the <wbr /> line-break hint in module names (no stray spaces)" do
+      Fixtures.with_tmp_dir(fn base ->
+        docs_root = Fixtures.write_docs_fixture(Path.join(base, "docs"))
+        db_path = Path.join(base, "docSet.dsidx")
+
+        Index.build!(db_path, docs_root, "mypkg")
+
+        # The fixture heading is `My<wbr />Module`, which Floki renders as
+        # "My Module"; the index must store it as "MyModule".
+        rows = Fixtures.read_index(db_path)
+
+        assert {"MyModule", "Module", "docs/mypkg/my_module.html"} in rows
+
+        # Code entries (modules and their members) must never carry a stray
+        # space; only human-readable Guide titles may contain spaces.
+        code_names =
+          for {name, type, _path} <- rows,
+              type in ["Module", "Function", "Type", "Callback", "Macro"],
+              do: name
+
+        refute Enum.any?(code_names, &String.contains?(&1, " "))
       end)
     end
 
