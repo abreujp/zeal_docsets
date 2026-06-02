@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] - 2026-06-02
+
+### Fixed
+
+- Fix stray spaces in module names caused by `<wbr />` line-break hints in ExDoc HTML.
+- Fix Dash/Zeal qualified lookups by indexing function, type, callback, and macro entries with fully-qualified names (`Module.member/arity`).
+
+### Changed
+
+- Update `doctor` to `~> 0.23` and `decimal` to `~> 3.1` to resolve a moderate DoS vulnerability (GHSA-rhv4-8758-jx7v).
+
 ## [0.1.6] - 2026-03-14
 
 ### Added
